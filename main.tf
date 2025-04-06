@@ -1,3 +1,27 @@
+resource "null_resource" "update-images" {
+  provisioner "local-exec" {
+    command = <<EOF
+      INDEX=0
+      for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
+        ssh root@$PVE_IP << IMG
+          cd /root
+          [ -d my_isos ] || mkdir my_isos
+          cd my_isos
+          curl -O https://cloud-images.ubuntu.com/releases/noble/release/SHA256SUMS
+          if ! grep ubuntu-24.04-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
+            curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img
+            qm destroy 900$INDEX || true
+            qm create 900$INDEX --name ubuntu-24-04-cloudinit
+            qm set 900$INDEX --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
+            qm template 900$INDEX
+          fi
+IMG
+        ((INDEX++))
+      done
+    EOF
+  }
+}
+
 resource "null_resource" "deploy-cloud-scripts" {
   provisioner "local-exec" {
     command = <<EOF
@@ -18,6 +42,8 @@ scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
     EOF
   }
+
+  depends_on = [null_resource.update-images]
 }
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
