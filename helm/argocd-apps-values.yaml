@@ -1,0 +1,73 @@
+applications:
+  ceph-csi:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: ceph-csi
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: ceph-csi
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
+  metrics-server:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: metrics-server
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: metrics
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
+    info:
+    - name: url
+      value: https://github.com/kubernetes-sigs/metrics-server
+
+# -- Deploy Argo CD Projects within this helm release
+# @default -- `{}` (See [values.yaml])
+## Ref: https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/
+projects: {}
+
+# -- Deploy Argo CD ApplicationSets within this helm release
+# @default -- `{}` (See [values.yaml])
+## Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/
+applicationsets: {}
+
+# --  Deploy Argo CD Applications/ApplicationSets/Projects within this helm release
+# @default -- `[]` (See [values.yaml])
+## Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/
+itemTemplates: []
+
+# -- DEPRECATED - Please refer [Deprecation Notice](https://github.com/argoproj-labs/argocd-extensions?tab=readme-ov-file#deprecation-notice) for more info.
+# @default -- `{}` (See [values.yaml])
+## This function in tech preview stage, do expect unstability or breaking changes in newer versions. Bump image.tag if necessary.
+## Ref: https://github.com/argoproj-labs/argocd-extensions
+extensions: {}
