@@ -40,10 +40,68 @@ scp /tmp/kubeadm-master.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+scp scripts/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
+scp scripts/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
+scp scripts/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
     EOF
   }
 
   depends_on = [null_resource.update-images]
+}
+
+resource "proxmox_vm_qemu" "loadbalancer" {
+  vmid             = "300"
+  name             = "loadbalancer"
+  target_node      = "pve01"
+  agent            = 1
+  cores            = local.lb_cores
+  memory           = local.lb_memory
+  boot             = "order=scsi0"
+  clone            = local.clone
+  scsihw           = "virtio-scsi-single"
+  vm_state         = "running"
+  automatic_reboot = true
+
+  # Cloud-Init configuration
+  cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/kubeadm-master.yml
+  ciupgrade  = true
+  nameserver = var.nameserver
+  ipconfig0  = "ip=192.168.1.130/24,gw=${var.gateway}"
+  skip_ipv6  = true
+  ciuser     = "ubuntu"
+  sshkeys    = var.public_ssh_key
+
+  # Most cloud-init images require a serial device for their display
+  serial {
+    id = 0
+  }
+
+  disks {
+    scsi {
+      scsi0 {
+        disk {
+          storage = "rbd"
+          size    = local.lb_disk
+        }
+      }
+    }
+    ide {
+      # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
+      ide1 {
+        cloudinit {
+          storage = "rbd"
+        }
+      }
+    }
+  }
+
+  network {
+    id     = 0
+    bridge = "vmbr0"
+    model  = "virtio"
+  }
+
+  depends_on = [null_resource.deploy-cloud-scripts]
 }
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
