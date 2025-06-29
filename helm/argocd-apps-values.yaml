@@ -1,4 +1,27 @@
 applications:
+  guestbook:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: test
+      plugin:
+        name: avp
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: test
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
   ceph-csi:
     namespace: argocd
     additionalLabels: {}
@@ -10,9 +33,11 @@ applications:
       repoURL: https://github.com/richardpct/argocd-apps.git
       targetRevision: HEAD
       path: ceph-csi
-      helm:
-        valueFiles:
-        - values.yaml
+      plugin:
+        name: avp-helm
+#      helm:
+#        valueFiles:
+#        - values.yaml
     destination:
       server: https://kubernetes.default.svc
       namespace: ceph-csi
@@ -50,6 +75,126 @@ applications:
     info:
     - name: url
       value: https://github.com/kubernetes-sigs/metrics-server
+  vault:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: vault
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: vault
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
+#  jenkins:
+#    namespace: argocd
+#    additionalLabels: {}
+#    additionalAnnotations: {}
+#    finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+#    project: default
+#    source:
+#      repoURL: https://github.com/richardpct/argocd-apps.git
+#      targetRevision: HEAD
+#      path: jenkins
+#      helm:
+#        valueFiles:
+#        - values.yaml
+#    destination:
+#      server: https://kubernetes.default.svc
+#      namespace: jenkins
+#    syncPolicy:
+#      automated:
+#        prune: false
+#        selfHeal: false
+#      syncOptions:
+#      - CreateNamespace=true
+#    revisionHistoryLimit: null
+#  minio-operator:
+#    namespace: argocd
+#    additionalLabels: {}
+#    additionalAnnotations: {}
+#    finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+#    project: default
+#    source:
+#      repoURL: https://github.com/richardpct/argocd-apps.git
+#      targetRevision: HEAD
+#      path: minio-operator
+#      helm:
+#        valueFiles:
+#        - values.yaml
+#    destination:
+#      server: https://kubernetes.default.svc
+#      namespace: minio-operator
+#    syncPolicy:
+#      automated:
+#        prune: false
+#        selfHeal: false
+#      syncOptions:
+#      - CreateNamespace=true
+#    revisionHistoryLimit: null
+#  minio-tenant:
+#    namespace: argocd
+#    additionalLabels: {}
+#    additionalAnnotations: {}
+#    finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+#    project: default
+#    source:
+#      repoURL: https://github.com/richardpct/argocd-apps.git
+#      targetRevision: HEAD
+#      path: minio-tenant
+#      helm:
+#        valueFiles:
+#        - values.yaml
+#    destination:
+#      server: https://kubernetes.default.svc
+#      namespace: minio-tenant
+#    syncPolicy:
+#      automated:
+#        prune: false
+#        selfHeal: false
+#      syncOptions:
+#      - CreateNamespace=true
+#    revisionHistoryLimit: null
+#  velero:
+#    namespace: argocd
+#    additionalLabels: {}
+#    additionalAnnotations: {}
+#    finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+#    project: default
+#    source:
+#      repoURL: https://github.com/richardpct/argocd-apps.git
+#      targetRevision: HEAD
+#      path: velero
+#      helm:
+#        valueFiles:
+#        - values.yaml
+#    destination:
+#      server: https://kubernetes.default.svc
+#      namespace: velero
+#    syncPolicy:
+#      automated:
+#        prune: false
+#        selfHeal: false
+#      syncOptions:
+#      - CreateNamespace=true
+#    revisionHistoryLimit: null
 
 # -- Deploy Argo CD Projects within this helm release
 # @default -- `{}` (See [values.yaml])

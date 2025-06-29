@@ -57,3 +57,8 @@ variable "public_ssh_key" {
   type        = string
   description = "public ssh key"
 }
+
+variable "cephfs_secret" {
+  type        = string
+  description = "ceph secret"
+}
