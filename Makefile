@@ -29,6 +29,9 @@ plan: init ## Dry run
 
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
+	tofu state rm helm_release.argo-cd || true
+	tofu state rm helm_release.argocd-apps || true
+	tofu state rm helm_release.cilium || true
 	tofu destroy
 
 .PHONY: clean
