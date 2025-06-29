@@ -54,7 +54,9 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   name             = "loadbalancer"
   target_node      = "pve01"
   agent            = 1
-  cores            = local.lb_cores
+  cpu {
+    cores = local.lb_cores
+  }
   memory           = local.lb_memory
   boot             = "order=scsi0"
   clone            = local.clone
@@ -80,7 +82,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     scsi {
       scsi0 {
         disk {
-          storage = "rbd"
+          storage = "mypool"
           size    = local.lb_disk
         }
       }
@@ -89,7 +91,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "rbd"
+          storage = "mypool"
         }
       }
     }
@@ -110,7 +112,9 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
   name             = "k8s-control-plane-${count.index}"
   target_node      = "pve0${count.index + 1}"
   agent            = 1
-  cores            = local.master_cores
+  cpu {
+    cores = local.master_cores
+  }
   memory           = local.master_memory
   boot             = "order=scsi0"
   clone            = local.clone
@@ -136,7 +140,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     scsi {
       scsi0 {
         disk {
-          storage = "rbd"
+          storage = "mypool"
           size    = local.master_disk
         }
       }
@@ -145,7 +149,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "rbd"
+          storage = "mypool"
         }
       }
     }
@@ -166,7 +170,9 @@ resource "proxmox_vm_qemu" "k8s-worker" {
   name             = "k8s-worker-${count.index}"
   target_node      = "pve0${count.index + 1}"
   agent            = 1
-  cores            = local.worker_cores
+  cpu {
+    cores = local.worker_cores
+  }
   memory           = local.worker_memory
   boot             = "order=scsi0" # has to be the same as the OS disk of the template
   clone            = local.clone
@@ -193,7 +199,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       scsi0 {
         # We have to specify the disk from our template, else Terraform will think it's not supposed to be there
         disk {
-          storage = "rbd"
+          storage = "mypool"
           # The size of the disk should be at least as big as the disk in the template. If it's smaller, the disk will be recreated
           size    = local.worker_disk
         }
@@ -203,7 +209,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "rbd"
+          storage = "mypool"
         }
       }
     }
