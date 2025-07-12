@@ -43,6 +43,9 @@ scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
 scp scripts/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp scripts/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+scp scripts/microk8s.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
+scp scripts/microk8s.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
+scp scripts/microk8s.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
     EOF
   }
 
@@ -105,6 +108,64 @@ resource "proxmox_vm_qemu" "loadbalancer" {
 
   depends_on = [null_resource.deploy-cloud-scripts]
 }
+
+resource "proxmox_vm_qemu" "microk8s" {
+  vmid             = "301"
+  name             = "microk8s"
+  target_node      = "pve02"
+  agent            = 1
+  cpu {
+    cores = 2
+  }
+  memory           = 8192
+  boot             = "order=scsi0"
+  clone            = local.clone
+  scsihw           = "virtio-scsi-single"
+  vm_state         = "running"
+  automatic_reboot = true
+
+  # Cloud-Init configuration
+  cicustom   = "vendor=local:snippets/microk8s.yml" # /var/lib/vz/snippets/kubeadm-master.yml
+  ciupgrade  = true
+  nameserver = var.nameserver
+  ipconfig0  = "ip=192.168.1.131/24,gw=${var.gateway}"
+  skip_ipv6  = true
+  ciuser     = "ubuntu"
+  sshkeys    = var.public_ssh_key
+
+  # Most cloud-init images require a serial device for their display
+  serial {
+    id = 0
+  }
+
+  disks {
+    scsi {
+      scsi0 {
+        disk {
+          storage = "mypool"
+          size    = local.lb_disk
+        }
+      }
+    }
+    ide {
+      # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
+      ide1 {
+        cloudinit {
+          storage = "mypool"
+        }
+      }
+    }
+  }
+
+  network {
+    id     = 0
+    bridge = "vmbr0"
+    model  = "virtio"
+  }
+
+  depends_on = [null_resource.deploy-cloud-scripts]
+}
+
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
   count            = local.master_nb
