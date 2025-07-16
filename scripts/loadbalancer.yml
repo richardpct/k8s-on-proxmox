@@ -14,6 +14,21 @@ write_files:
       apt-get upgrade -y
       apt-get install -y haproxy
 
+      cat >> /etc/haproxy/haproxy.cfg <<EOF
+      frontend k8s_api
+        mode tcp
+        bind *:6443
+        default_backend k8s_api_backend
+
+      backend k8s_api_backend
+        mode tcp
+        balance leastconn
+        server k8s-api-1 MASTER_SUBNET0:6443 check
+        server k8s-api-2 MASTER_SUBNET1:6443 check
+        server k8s-api-3 MASTER_SUBNET2:6443 check
+      EOF
+
+      systemctl restart haproxy
     permissions: '0755'
 runcmd:
  - [sh, "/tmp/lb.sh"]

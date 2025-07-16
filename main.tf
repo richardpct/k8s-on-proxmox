@@ -33,16 +33,19 @@ for ((i=0; i < ${local.worker_nb}; i++)); do
   sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
 done
 
-sed -e 's/API_ENDPOINT/${var.master_subnet}0/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
+sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
+
+sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
+sed -e 's/MASTER_SUBNET/${var.master_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
 scp /tmp/kubeadm-master.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
     EOF
   }
 
@@ -68,7 +71,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/kubeadm-master.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=192.168.1.130/24,gw=${var.gateway}"
+  ipconfig0  = "ip=${var.lb_ip}/24,gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
