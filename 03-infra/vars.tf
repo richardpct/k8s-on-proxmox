@@ -53,6 +53,11 @@ variable "pve03_ip" {
   description = "pve03 ip"
 }
 
+variable "lb_ip" {
+  type        = string
+  description = "lb ip"
+}
+
 variable "public_ssh_key" {
   type        = string
   description = "public ssh key"

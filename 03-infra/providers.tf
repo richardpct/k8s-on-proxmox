@@ -2,11 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "Telmate/proxmox"
-      version = "3.0.2-rc01"
-    }
-    kubernetes = {
-      source  = "opentofu/kubernetes"
-      version = "2.21.1"
+      version = "3.0.2-rc03"
     }
   }
 }

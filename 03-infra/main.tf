@@ -68,7 +68,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/kubeadm-master.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=192.168.1.130/24,gw=${var.gateway}"
+  ipconfig0  = "ip=${var.lb_ip}/24,gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
