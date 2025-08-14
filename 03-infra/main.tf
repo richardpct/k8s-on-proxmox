@@ -33,7 +33,7 @@ for ((i=0; i < ${local.worker_nb}; i++)); do
   sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
 done
 
-sed -e 's/API_ENDPOINT/${var.master_subnet}0/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
+sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
 scp /tmp/kubeadm-master.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
@@ -65,7 +65,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   automatic_reboot = true
 
   # Cloud-Init configuration
-  cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/kubeadm-master.yml
+  cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/loadbalancer.yml
   ciupgrade  = true
   nameserver = var.nameserver
   ipconfig0  = "ip=${var.lb_ip}/24,gw=${var.gateway}"
@@ -161,7 +161,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts]
+  depends_on = [null_resource.deploy-cloud-scripts,proxmox_vm_qemu.loadbalancer]
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
@@ -221,7 +221,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts]
+  depends_on = [null_resource.deploy-cloud-scripts,proxmox_vm_qemu.loadbalancer]
 }
 
 resource "null_resource" "configure_masters" {
