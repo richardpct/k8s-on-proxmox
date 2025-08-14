@@ -22,6 +22,21 @@ resource "helm_release" "cilium" {
   depends_on = [null_resource.configure_masters]
 }
 
+resource "helm_release" "vault" {
+  name             = "vault"
+  repository       = "https://helm.releases.hashicorp.com"
+  chart            = "vault"
+  namespace        = "vault"
+  create_namespace = true
+  force_update     = true
+
+  values = [
+    "${file("helm/vault-values.yaml")}"
+  ]
+
+  depends_on = [helm_release.cilium]
+}
+
 resource "null_resource" "ceph-csi-secret" {
   provisioner "local-exec" {
     command = <<EOF
@@ -29,7 +44,7 @@ resource "null_resource" "ceph-csi-secret" {
       kubectl -n ceph-csi create secret generic csi-cephfs-secret --from-literal=userID=admin --from-literal=userKey=${var.cephfs_secret}
     EOF
   }
-  depends_on = [helm_release.cilium]
+  depends_on = [helm_release.vault]
 }
 
 resource "helm_release" "argo-cd" {
