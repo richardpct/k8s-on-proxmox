@@ -3,7 +3,7 @@ package_update: true
 write_files:
   - path: /tmp/worker.sh
     content: |
-      #!/usr/bin/env
+      #!/usr/bin/env bash
 
       set -e -u -x
 
