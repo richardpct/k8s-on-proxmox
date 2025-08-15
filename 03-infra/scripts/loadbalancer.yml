@@ -60,9 +60,9 @@ write_files:
               balance roundrobin
               mode tcp
               option tcp-check
-              server control-plane-01 192.168.1.110:6443 check
-              server control-plane-02 192.168.1.111:6443 check
-              server control-plane-03 192.168.1.112:6443 check
+              server control-plane-01 MASTER_SUBNET0:6443 check
+              server control-plane-02 MASTER_SUBNET1:6443 check
+              server control-plane-03 MASTER_SUBNET2:6443 check
       EOF
 
       systemctl restart haproxy

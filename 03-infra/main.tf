@@ -33,16 +33,21 @@ for ((i=0; i < ${local.worker_nb}; i++)); do
   sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
 done
 
+sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
+
 sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
 scp /tmp/kubeadm-master.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+
 scp scripts/kubeadm-worker.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+
+sed -e 's/MASTER_SUBNET/${var.master_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
+scp /tmp/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
     EOF
   }
 
@@ -161,7 +166,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts,proxmox_vm_qemu.loadbalancer]
+  depends_on = [null_resource.deploy-cloud-scripts, proxmox_vm_qemu.loadbalancer]
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
@@ -221,7 +226,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts,proxmox_vm_qemu.loadbalancer]
+  depends_on = [null_resource.deploy-cloud-scripts, proxmox_vm_qemu.loadbalancer]
 }
 
 resource "null_resource" "configure_masters" {
