@@ -33,6 +33,7 @@ destroy: ## Destroy the infrastructure
 	tofu state rm helm_release.argocd-apps || true
 	tofu state rm helm_release.cilium || true
 	tofu destroy
+	rm *.backup
 
 .PHONY: clean
 clean: ## Clean
