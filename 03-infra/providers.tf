@@ -4,6 +4,11 @@ terraform {
       source  = "Telmate/proxmox"
       version = "3.0.2-rc03"
     }
+
+    kubernetes = {
+      source  = "opentofu/kubernetes"
+      version = "2.38.0"
+    }
   }
 }
 

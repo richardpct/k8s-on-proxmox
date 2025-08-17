@@ -10,11 +10,10 @@ help: ## Show help
 	| grep -v awk
 
 $(TERRAFORM_LOCK):
-#	tofu init \
-#		-backend-config="bucket=${TF_VAR_bucket}" \
-#		-backend-config="key=${TF_VAR_key_network}" \
-#		-backend-config="region=${TF_VAR_region}"
-	tofu init
+	tofu init \
+		-backend-config="bucket=${TF_VAR_bucket}" \
+		-backend-config="key=${TF_VAR_key_infra}" \
+		-backend-config="region=${TF_VAR_region}"
 
 .PHONY: init
 init: $(TERRAFORM_LOCK) ## Init

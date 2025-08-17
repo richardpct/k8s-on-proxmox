@@ -44,7 +44,7 @@ scp scripts/kubeadm-worker.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
 
-sed -e 's/MASTER_SUBNET/${var.master_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
+sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
 scp /tmp/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp /tmp/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp /tmp/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/

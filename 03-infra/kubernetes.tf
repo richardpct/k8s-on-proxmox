@@ -8,6 +8,20 @@ provider "helm" {
   }
 }
 
+resource "null_resource" "default-tls-cert" {
+  provisioner "local-exec" {
+    command = <<EOF
+      echo "${data.terraform_remote_state.certificate.outputs.wildcard_certificate}" > /tmp/wildcard.crt
+      echo "${data.terraform_remote_state.certificate.outputs.wildcard_private_key}" > /tmp/wildcard.key
+      kubectl -n kube-system create secret tls default-tls-cert --cert=/tmp/wildcard.crt --key=/tmp/wildcard.key
+      rm /tmp/wildcard.crt
+      rm /tmp/wildcard.key
+    EOF
+  }
+
+  depends_on = [null_resource.configure_masters]
+}
+
 resource "helm_release" "cilium" {
   name         = "cilium"
   repository   = "https://helm.cilium.io/"
@@ -19,7 +33,7 @@ resource "helm_release" "cilium" {
     "${file("helm/cilium-values.yaml")}"
   ]
 
-  depends_on = [null_resource.configure_masters]
+  depends_on = [null_resource.default-tls-cert]
 }
 
 resource "helm_release" "vault" {

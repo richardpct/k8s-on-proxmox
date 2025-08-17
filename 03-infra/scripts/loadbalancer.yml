@@ -56,6 +56,12 @@ write_files:
               option tcplog
               default_backend kube-apiserver
 
+      frontend kube-https
+              bind *:443
+              mode tcp
+              option tcplog
+              default_backend kube-ingress-worker
+
       backend kube-apiserver
               balance roundrobin
               mode tcp
@@ -63,6 +69,14 @@ write_files:
               server control-plane-01 MASTER_SUBNET0:6443 check
               server control-plane-02 MASTER_SUBNET1:6443 check
               server control-plane-03 MASTER_SUBNET2:6443 check
+
+      backend kube-ingress-worker
+              balance roundrobin
+              mode tcp
+              option tcp-check
+              server kube-worker-01 WORKER_SUBNET0:30443 check
+              server kube-worker-02 WORKER_SUBNET1:30443 check
+              server kube-worker-03 WORKER_SUBNET2:30443 check
       EOF
 
       systemctl restart haproxy

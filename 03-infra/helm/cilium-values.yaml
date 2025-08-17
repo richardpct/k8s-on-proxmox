@@ -7,6 +7,8 @@ ingressController:
     type: NodePort
     insecureNodePort: 30080
     secureNodePort: 30443
+  defaultSecretNamespace: kube-system
+  defaultSecretName: default-tls-cert
 k8sServiceHost: 192.168.1.130
 k8sServicePort: 6443
 hubble:
