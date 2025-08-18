@@ -8,6 +8,11 @@ provider "helm" {
   }
 }
 
+provider "vault" {
+  address = "https://vault.${var.my_domain}"
+  token   = var.vault_token
+}
+
 resource "null_resource" "default-tls-cert" {
   provisioner "local-exec" {
     command = <<EOF
@@ -55,7 +60,34 @@ resource "helm_release" "vault" {
     "${file("helm/vault-values.yaml")}"
   ]
 
+  set = [
+    {
+      name  = "server.ingress.hosts[0].host"
+      value = "vault.${var.my_domain}"
+    },
+    {
+      name  = "server.ingress.hosts[0].paths[0]"
+      value = "/"
+    },
+    {
+      name  = "server.ingress.tls[0].hosts[0]"
+      value = "vault.${var.my_domain}"
+    }
+  ]
+
   depends_on = [helm_release.cilium]
+}
+
+resource "vault_generic_secret" "ceph-cluster-id" {
+  path = "secret/ceph"
+
+  data_json = <<EOT
+{
+  "clusterid": "${var.ceph_cluster_id}"
+}
+EOT
+
+  depends_on = [helm_release.vault]
 }
 
 resource "null_resource" "ceph-csi-secret" {

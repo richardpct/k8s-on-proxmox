@@ -4,3 +4,7 @@ server:
     enabled: true
   dataStorage:
     enabled: false
+  ingress:
+    enabled: true
+    ingressClassName: cilium
+    pathType: Prefix

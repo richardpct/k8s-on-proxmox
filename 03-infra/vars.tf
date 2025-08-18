@@ -82,3 +82,18 @@ variable "cephfs_secret" {
   type        = string
   description = "ceph secret"
 }
+
+variable "my_domain" {
+  type        = string
+  description = "domain name"
+}
+
+variable "vault_token" {
+  type        = string
+  description = "vault token"
+}
+
+variable "ceph_cluster_id" {
+  type        = string
+  description = "ceph cluster id"
+}
