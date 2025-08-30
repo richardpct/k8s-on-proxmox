@@ -78,6 +78,15 @@ resource "helm_release" "vault" {
   depends_on = [helm_release.cilium]
 }
 
+resource "null_resource" "sleep-10s" {
+  provisioner "local-exec" {
+    command = <<EOF
+      sleep 10
+    EOF
+  }
+  depends_on = [helm_release.vault]
+}
+
 resource "vault_generic_secret" "ceph-cluster-id" {
   path = "secret/ceph"
 
@@ -87,7 +96,7 @@ resource "vault_generic_secret" "ceph-cluster-id" {
 }
 EOT
 
-  depends_on = [helm_release.vault]
+  depends_on = [null_resource.sleep-10s]
 }
 
 resource "null_resource" "ceph-csi-secret" {
