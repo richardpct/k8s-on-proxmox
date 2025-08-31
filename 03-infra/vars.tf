@@ -8,7 +8,7 @@ locals {
   master_memory = 4096
   worker_memory = 8192
   lb_memory     = 4096
-  master_disk   = "20G"
+  master_disk   = "10G"
   worker_disk   = "20G"
   lb_disk       = "10G"
 }

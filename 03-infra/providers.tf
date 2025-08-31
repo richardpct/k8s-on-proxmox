@@ -15,5 +15,5 @@ terraform {
 provider "proxmox" {
   pm_api_url      = "https://192.168.1.20:8006/api2/json"
   pm_tls_insecure = true
-#  pm_parallel     = 10
+  pm_parallel     = 7
 }

@@ -87,7 +87,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     scsi {
       scsi0 {
         disk {
-          storage = "mypool"
+          storage = "local-lvm"
           size    = local.lb_disk
         }
       }
@@ -96,7 +96,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "mypool"
+          storage = "local-lvm"
         }
       }
     }
@@ -145,7 +145,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     scsi {
       scsi0 {
         disk {
-          storage = "mypool"
+          storage = "local-lvm"
           size    = local.master_disk
         }
       }
@@ -154,7 +154,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "mypool"
+          storage = "local-lvm"
         }
       }
     }
@@ -166,7 +166,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts, proxmox_vm_qemu.loadbalancer]
+  depends_on = [null_resource.deploy-cloud-scripts]
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
@@ -204,7 +204,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       scsi0 {
         # We have to specify the disk from our template, else Terraform will think it's not supposed to be there
         disk {
-          storage = "mypool"
+          storage = "local-lvm"
           # The size of the disk should be at least as big as the disk in the template. If it's smaller, the disk will be recreated
           size    = local.worker_disk
         }
@@ -214,7 +214,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "mypool"
+          storage = "local-lvm"
         }
       }
     }
@@ -226,7 +226,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts, proxmox_vm_qemu.loadbalancer]
+  depends_on = [null_resource.deploy-cloud-scripts]
 }
 
 resource "null_resource" "configure_masters" {
