@@ -1,4 +1,9 @@
+global:
+  domain: argocd.unixworld.io
+
 configs:
+  params:
+    server.insecure: true
   # ConfigMap for Config Management Plugins
   # Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/
   cmp:
@@ -571,3 +576,15 @@ repoServer:
   #     - get
   #     - list
   #     - watch
+server:
+  ingress:
+    enabled: true
+    ingressClassName: "cilium"
+    hostname: argocd.unixworld.io
+    pathType: Prefix
+    path: /
+    tls: true
+    extraTls:
+      - secretName: ""
+        hosts:
+          - argocd.unixworld.io
