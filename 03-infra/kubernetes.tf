@@ -104,6 +104,8 @@ resource "null_resource" "ceph-csi-secret" {
     command = <<EOF
       kubectl create ns ceph-csi
       kubectl -n ceph-csi create secret generic csi-cephfs-secret --from-literal=userID=admin --from-literal=userKey=${var.cephfs_secret}
+      kubectl create clusterrole ceph-csi-cephfs-provisioner-custom --verb=list,get,watch --resource=volumeattachments.storage.k8s.io
+      kubectl create clusterrolebinding ceph-csi-cephfs-provisioner-custom --clusterrole=ceph-csi-cephfs-provisioner-custom --serviceaccount=ceph-csi:ceph-csi-ceph-csi-cephfs-provisioner
     EOF
   }
   depends_on = [helm_release.vault]
