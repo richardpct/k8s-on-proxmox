@@ -8,9 +8,24 @@ locals {
   master_memory = 4096
   worker_memory = 8192
   lb_memory     = 4096
-  master_disk   = "20G"
+  master_disk   = "10G"
   worker_disk   = "20G"
   lb_disk       = "10G"
+}
+
+variable "region" {
+  type        = string
+  description = "region"
+}
+
+variable "bucket" {
+  type        = string
+  description = "bucket"
+}
+
+variable "key_certificate" {
+  type        = string
+  description = "certificate key"
 }
 
 variable "nameserver" {
@@ -53,6 +68,11 @@ variable "pve03_ip" {
   description = "pve03 ip"
 }
 
+variable "lb_ip" {
+  type        = string
+  description = "lb ip"
+}
+
 variable "public_ssh_key" {
   type        = string
   description = "public ssh key"
@@ -61,4 +81,19 @@ variable "public_ssh_key" {
 variable "cephfs_secret" {
   type        = string
   description = "ceph secret"
+}
+
+variable "my_domain" {
+  type        = string
+  description = "domain name"
+}
+
+variable "vault_token" {
+  type        = string
+  description = "vault token"
+}
+
+variable "ceph_cluster_id" {
+  type        = string
+  description = "ceph cluster id"
 }

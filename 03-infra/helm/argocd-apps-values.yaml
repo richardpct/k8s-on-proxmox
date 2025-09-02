@@ -75,31 +75,7 @@ applications:
     info:
     - name: url
       value: https://github.com/kubernetes-sigs/metrics-server
-  vault:
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
-      path: vault
-      helm:
-        valueFiles:
-        - values.yaml
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: vault
-    syncPolicy:
-      automated:
-        prune: false
-        selfHeal: false
-      syncOptions:
-      - CreateNamespace=true
-    revisionHistoryLimit: null
-#  jenkins:
+#  vault:
 #    namespace: argocd
 #    additionalLabels: {}
 #    additionalAnnotations: {}
@@ -109,13 +85,13 @@ applications:
 #    source:
 #      repoURL: https://github.com/richardpct/argocd-apps.git
 #      targetRevision: HEAD
-#      path: jenkins
+#      path: vault
 #      helm:
 #        valueFiles:
 #        - values.yaml
 #    destination:
 #      server: https://kubernetes.default.svc
-#      namespace: jenkins
+#      namespace: vault
 #    syncPolicy:
 #      automated:
 #        prune: false
@@ -123,6 +99,30 @@ applications:
 #      syncOptions:
 #      - CreateNamespace=true
 #    revisionHistoryLimit: null
+  jenkins:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: jenkins
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: jenkins
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
 #  minio-operator:
 #    namespace: argocd
 #    additionalLabels: {}

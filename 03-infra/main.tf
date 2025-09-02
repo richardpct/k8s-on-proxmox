@@ -33,16 +33,21 @@ for ((i=0; i < ${local.worker_nb}; i++)); do
   sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
 done
 
-sed -e 's/API_ENDPOINT/${var.master_subnet}0/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
+sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
+
+sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
 scp /tmp/kubeadm-master.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp /tmp/kubeadm-master.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+
 scp scripts/kubeadm-worker.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
 scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
-scp scripts/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+
+sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
+scp /tmp/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
+scp /tmp/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
     EOF
   }
 
@@ -65,10 +70,10 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   automatic_reboot = true
 
   # Cloud-Init configuration
-  cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/kubeadm-master.yml
+  cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/loadbalancer.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=192.168.1.130/24,gw=${var.gateway}"
+  ipconfig0  = "ip=${var.lb_ip}/24,gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -82,7 +87,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     scsi {
       scsi0 {
         disk {
-          storage = "mypool"
+          storage = "local-lvm"
           size    = local.lb_disk
         }
       }
@@ -91,7 +96,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "mypool"
+          storage = "local-lvm"
         }
       }
     }
@@ -140,7 +145,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     scsi {
       scsi0 {
         disk {
-          storage = "mypool"
+          storage = "local-lvm"
           size    = local.master_disk
         }
       }
@@ -149,7 +154,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "mypool"
+          storage = "local-lvm"
         }
       }
     }
@@ -199,7 +204,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       scsi0 {
         # We have to specify the disk from our template, else Terraform will think it's not supposed to be there
         disk {
-          storage = "mypool"
+          storage = "local-lvm"
           # The size of the disk should be at least as big as the disk in the template. If it's smaller, the disk will be recreated
           size    = local.worker_disk
         }
@@ -209,7 +214,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "mypool"
+          storage = "local-lvm"
         }
       }
     }

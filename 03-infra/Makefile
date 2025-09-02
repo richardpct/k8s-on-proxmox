@@ -10,18 +10,17 @@ help: ## Show help
 	| grep -v awk
 
 $(TERRAFORM_LOCK):
-#	tofu init \
-#		-backend-config="bucket=${TF_VAR_bucket}" \
-#		-backend-config="key=${TF_VAR_key_network}" \
-#		-backend-config="region=${TF_VAR_region}"
-	tofu init
+	tofu init \
+		-backend-config="bucket=${TF_VAR_bucket}" \
+		-backend-config="key=${TF_VAR_key_infra}" \
+		-backend-config="region=${TF_VAR_region}"
 
 .PHONY: init
 init: $(TERRAFORM_LOCK) ## Init
 
 .PHONY: apply
 apply: init ## Create the infrastructure
-	tofu apply
+	gtime tofu apply -auto-approve
 
 .PHONY: plan
 plan: init ## Dry run
@@ -32,7 +31,11 @@ destroy: ## Destroy the infrastructure
 	tofu state rm helm_release.argo-cd || true
 	tofu state rm helm_release.argocd-apps || true
 	tofu state rm helm_release.cilium || true
-	tofu destroy
+	tofu state rm helm_release.vault || true
+	tofu state rm helm_release.kyverno || true
+	tofu state rm vault_generic_secret.ceph-cluster-id || true
+	tofu destroy -auto-approve
+	@rm -fv *.backup
 
 .PHONY: clean
 clean: ## Clean
