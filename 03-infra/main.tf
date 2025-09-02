@@ -36,18 +36,15 @@ done
 sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
 
 sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
-scp /tmp/kubeadm-master.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
-scp /tmp/kubeadm-master.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
-scp /tmp/kubeadm-master.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
-
-scp scripts/kubeadm-worker.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
-scp scripts/kubeadm-worker.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
-scp scripts/kubeadm-worker.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
+  scp /tmp/kubeadm-master.yml root@$PVE_IP:/var/lib/vz/snippets/
+  scp scripts/kubeadm-worker.yml root@$PVE_IP:/var/lib/vz/snippets/
+done
 
 sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
-scp /tmp/loadbalancer.yml root@${var.pve01_ip}:/var/lib/vz/snippets/
-scp /tmp/loadbalancer.yml root@${var.pve02_ip}:/var/lib/vz/snippets/
-scp /tmp/loadbalancer.yml root@${var.pve03_ip}:/var/lib/vz/snippets/
+for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
+  scp /tmp/loadbalancer.yml root@$PVE_IP:/var/lib/vz/snippets/
+done
     EOF
   }
 
