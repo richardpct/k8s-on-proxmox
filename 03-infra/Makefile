@@ -28,11 +28,11 @@ plan: init ## Dry run
 
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
-	tofu state rm helm_release.argo-cd || true
-	tofu state rm helm_release.argocd-apps || true
-	tofu state rm helm_release.cilium || true
-	tofu state rm helm_release.vault || true
-	tofu state rm vault_generic_secret.ceph-cluster-id || true
+	tofu state rm helm_release.argo-cd 2> /dev/null || true
+	tofu state rm helm_release.argocd-apps 2> /dev/null || true
+	tofu state rm helm_release.cilium 2> /dev/null || true
+	tofu state rm helm_release.vault 2> /dev/null || true
+	tofu state rm vault_generic_secret.ceph-cluster-id 2> /dev/null || true
 	tofu destroy -auto-approve
 	@rm -fv *.backup
 
