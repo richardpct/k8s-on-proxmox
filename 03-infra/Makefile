@@ -32,7 +32,6 @@ destroy: ## Destroy the infrastructure
 	tofu state rm helm_release.argocd-apps || true
 	tofu state rm helm_release.cilium || true
 	tofu state rm helm_release.vault || true
-	tofu state rm helm_release.kyverno || true
 	tofu state rm vault_generic_secret.ceph-cluster-id || true
 	tofu destroy -auto-approve
 	@rm -fv *.backup
