@@ -25,11 +25,11 @@ IMG
 resource "null_resource" "deploy-cloud-scripts" {
   provisioner "local-exec" {
     command = <<EOF
-for ((i=0; i < ${local.master_nb}; i++)); do
+for ((i=1; i <= ${local.master_nb}; i++)); do
   sed -i -e "/${var.master_subnet}$i/d" ~/.ssh/known_hosts
 done
 
-for ((i=0; i < ${local.worker_nb}; i++)); do
+for ((i=1; i <= ${local.worker_nb}; i++)); do
   sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
 done
 
@@ -113,8 +113,8 @@ resource "proxmox_vm_qemu" "loadbalancer" {
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
   count            = local.master_nb
-  vmid             = "10${count.index}"
-  name             = "k8s-control-plane-${count.index}"
+  vmid             = "10${count.index + 1}"
+  name             = "k8s-control-plane-${count.index + 1}"
   target_node      = "pve0${count.index + 1}"
   agent            = 1
   cpu {
@@ -131,7 +131,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
   cicustom   = "vendor=local:snippets/kubeadm-master.yml" # /var/lib/vz/snippets/kubeadm-master.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.master_subnet}${count.index}/${var.cidr},gw=${var.gateway}"
+  ipconfig0  = "ip=${var.master_subnet}${count.index + 1}/${var.cidr},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -171,8 +171,8 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
 
 resource "proxmox_vm_qemu" "k8s-worker" {
   count            = local.worker_nb
-  vmid             = "20${count.index}"
-  name             = "k8s-worker-${count.index}"
+  vmid             = "20${count.index + 1}"
+  name             = "k8s-worker-${count.index + 1}"
   target_node      = "pve0${count.index + 1}"
   agent            = 1
   cpu {
@@ -189,7 +189,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
   cicustom   = "vendor=local:snippets/kubeadm-worker.yml" # /var/lib/vz/snippets/qemu-guest-agent.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.worker_subnet}${count.index}/${var.cidr},gw=${var.gateway}"
+  ipconfig0  = "ip=${var.worker_subnet}${count.index + 1}/${var.cidr},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -232,28 +232,28 @@ resource "proxmox_vm_qemu" "k8s-worker" {
 resource "null_resource" "configure_masters" {
   provisioner "local-exec" {
     command = <<EOF
-while ! nc -w1 ${var.master_subnet}0 22; do sleep 2; done
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+while ! nc -w1 ${var.master_subnet}1 22; do sleep 2; done
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
 echo 'sudo su -' > /tmp/configure-master.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
 
 echo 'sudo su -' > /tmp/configure-worker.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
 
-for ((i=1; i < ${local.master_nb}; i++)); do
+for ((i=2; i <= ${local.master_nb}; i++)); do
   ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}$i 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
   ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}$i 'bash -s' < /tmp/configure-master.sh
 done
 
-for ((i=0; i < ${local.worker_nb}; i++)); do
+for ((i=1; i <= ${local.worker_nb}; i++)); do
   ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}$i 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
   ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}$i 'bash -s' < /tmp/configure-worker.sh
 done
 
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}0 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
+ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
 chmod 600 ~/.kube/config
     EOF
   }

@@ -116,7 +116,7 @@ write_files:
       apt-mark hold kubelet kubeadm kubectl
 
       # CREATE CLUSTER
-      if hostname | grep '0$'; then
+      if hostname | grep '1$'; then
         kubeadm init \
           --control-plane-endpoint "API_ENDPOINT:6443" \
           --skip-phases=addon/kube-proxy \

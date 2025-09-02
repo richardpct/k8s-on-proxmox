@@ -66,17 +66,17 @@ write_files:
               balance roundrobin
               mode tcp
               option tcp-check
-              server control-plane-01 MASTER_SUBNET0:6443 check
-              server control-plane-02 MASTER_SUBNET1:6443 check
-              server control-plane-03 MASTER_SUBNET2:6443 check
+              server control-plane-01 MASTER_SUBNET1:6443 check
+              server control-plane-02 MASTER_SUBNET2:6443 check
+              server control-plane-03 MASTER_SUBNET3:6443 check
 
       backend kube-ingress-worker
               balance roundrobin
               mode tcp
               option tcp-check
-              server kube-worker-01 WORKER_SUBNET0:30443 check
-              server kube-worker-02 WORKER_SUBNET1:30443 check
-              server kube-worker-03 WORKER_SUBNET2:30443 check
+              server kube-worker-01 WORKER_SUBNET1:30443 check
+              server kube-worker-02 WORKER_SUBNET2:30443 check
+              server kube-worker-03 WORKER_SUBNET3:30443 check
       EOF
 
       systemctl restart haproxy
