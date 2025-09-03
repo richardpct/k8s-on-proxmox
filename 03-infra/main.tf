@@ -25,26 +25,26 @@ IMG
 resource "null_resource" "deploy-cloud-scripts" {
   provisioner "local-exec" {
     command = <<EOF
-for ((i=1; i <= ${local.master_nb}; i++)); do
-  sed -i -e "/${var.master_subnet}$i/d" ~/.ssh/known_hosts
-done
+      for ((i=1; i <= ${local.master_nb}; i++)); do
+        sed -i -e "/${var.master_subnet}$i/d" ~/.ssh/known_hosts
+      done
 
-for ((i=1; i <= ${local.worker_nb}; i++)); do
-  sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
-done
+      for ((i=1; i <= ${local.worker_nb}; i++)); do
+        sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
+      done
 
-sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
+      sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
 
-sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
-for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
-  scp /tmp/kubeadm-master.yml root@$PVE_IP:/var/lib/vz/snippets/
-  scp scripts/kubeadm-worker.yml root@$PVE_IP:/var/lib/vz/snippets/
-done
+      sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
+      for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
+        scp /tmp/kubeadm-master.yml root@$PVE_IP:/var/lib/vz/snippets/
+        scp scripts/kubeadm-worker.yml root@$PVE_IP:/var/lib/vz/snippets/
+      done
 
-sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
-for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
-  scp /tmp/loadbalancer.yml root@$PVE_IP:/var/lib/vz/snippets/
-done
+      sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
+      for PVE_IP in ${var.pve01_ip} ${var.pve02_ip} ${var.pve03_ip}; do
+        scp /tmp/loadbalancer.yml root@$PVE_IP:/var/lib/vz/snippets/
+      done
     EOF
   }
 
@@ -229,29 +229,29 @@ resource "proxmox_vm_qemu" "k8s-worker" {
 resource "null_resource" "configure_masters" {
   provisioner "local-exec" {
     command = <<EOF
-while ! nc -w1 ${var.master_subnet}1 22; do sleep 2; done
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-echo 'sudo su -' > /tmp/configure-master.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      while ! nc -w1 ${var.master_subnet}1 22; do sleep 2; done
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      echo 'sudo su -' > /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
 
-echo 'sudo su -' > /tmp/configure-worker.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+      echo 'sudo su -' > /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
 
-for ((i=2; i <= ${local.master_nb}; i++)); do
-  ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}$i 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-  ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}$i 'bash -s' < /tmp/configure-master.sh
-done
+      for ((i=2; i <= ${local.master_nb}; i++)); do
+        ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}$i 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+        ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}$i 'bash -s' < /tmp/configure-master.sh
+      done
 
-for ((i=1; i <= ${local.worker_nb}; i++)); do
-  ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}$i 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-  ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}$i 'bash -s' < /tmp/configure-worker.sh
-done
+      for ((i=1; i <= ${local.worker_nb}; i++)); do
+        ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}$i 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+        ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}$i 'bash -s' < /tmp/configure-worker.sh
+      done
 
-ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
-chmod 600 ~/.kube/config
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
+      chmod 600 ~/.kube/config
     EOF
   }
 
