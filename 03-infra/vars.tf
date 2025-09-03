@@ -97,3 +97,18 @@ variable "ceph_cluster_id" {
   type        = string
   description = "ceph cluster id"
 }
+
+variable "pm_api_url" {
+  type        = string
+  description = "pm api url"
+}
+
+variable "pm_user" {
+  type        = string
+  description = "pm user"
+}
+
+variable "pm_password" {
+  type        = string
+  description = "pm password"
+}
