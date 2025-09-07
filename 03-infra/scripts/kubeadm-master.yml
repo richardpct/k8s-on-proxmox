@@ -11,7 +11,7 @@ write_files:
       systemctl start qemu-guest-agent
 
       apt-get update -y
-      apt-get upgrade -y
+      #apt-get upgrade -y
       apt-get install -y \
         apt-transport-https \
         ca-certificates \
@@ -126,5 +126,13 @@ write_files:
 
       echo 'DONE'
     permissions: '0755'
+apt:
+  preserve_sources_list: false
+  primary:
+    - arches: [default]
+      uri: _UBUNTU_MIRROR_
+  security:
+    - arches: [default]
+      uri: http://security.ubuntu.com/ubuntu
 runcmd:
  - [sh, "/tmp/master.sh"]

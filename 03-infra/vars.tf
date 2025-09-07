@@ -112,3 +112,9 @@ variable "pm_password" {
   type        = string
   description = "pm password"
 }
+
+variable "ubuntu_mirror" {
+  type        = string
+  description = "ubuntu mirror"
+  default     = "http://fr.archive.ubuntu.com/ubuntu/"
+}

@@ -24,7 +24,7 @@ resource "null_resource" "default-tls-cert" {
     EOF
   }
 
-  depends_on = [null_resource.configure_masters]
+  depends_on = [null_resource.configure_workers]
 }
 
 resource "helm_release" "cilium" {
