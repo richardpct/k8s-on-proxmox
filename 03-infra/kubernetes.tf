@@ -35,7 +35,7 @@ resource "helm_release" "cilium" {
   force_update = true
 
   values = [
-    "${file("helm/cilium-values.yaml")}"
+    "${file("helm-values/cilium.yaml")}"
   ]
 
  set = [
@@ -57,7 +57,7 @@ resource "helm_release" "vault" {
   force_update     = true
 
   values = [
-    "${file("helm/vault-values.yaml")}"
+    "${file("helm-values/vault.yaml")}"
   ]
 
   set = [
@@ -120,7 +120,7 @@ resource "helm_release" "argo-cd" {
   force_update     = true
 
   values = [
-    "${file("helm/argocd-values.yaml")}"
+    "${file("helm-values/argocd.yaml")}"
   ]
 
   depends_on = [null_resource.ceph-csi-secret]
@@ -135,7 +135,7 @@ resource "helm_release" "argocd-apps" {
   force_update     = true
 
   values = [
-    "${file("helm/argocd-apps-values.yaml")}"
+    "${file("helm-values/argocd-apps.yaml")}"
   ]
 
   depends_on = [helm_release.argo-cd]

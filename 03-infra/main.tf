@@ -30,7 +30,7 @@ IMG
   }
 }
 
-resource "null_resource" "prepare-cloud-scripts" {
+resource "null_resource" "prepare-cloud-init-scripts" {
   provisioner "local-exec" {
     command = <<EOF
       set -x
@@ -45,11 +45,11 @@ resource "null_resource" "prepare-cloud-scripts" {
         sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
       done
 
-      sed -e 's/API_ENDPOINT/${var.lb_ip}/' scripts/kubeadm-master.yml > /tmp/kubeadm-master.yml
-      sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' scripts/loadbalancer.yml > /tmp/loadbalancer.yml
+      sed -e 's/API_ENDPOINT/${var.lb_ip}/' cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
+      sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' cloud-init/loadbalancer.yml > /tmp/loadbalancer.yml
 
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/kubeadm-master.yml
-      sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' scripts/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
+      sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/loadbalancer.yml
     EOF
   }
@@ -57,7 +57,7 @@ resource "null_resource" "prepare-cloud-scripts" {
   depends_on = [null_resource.update-images]
 }
 
-resource "null_resource" "deploy-cloud-scripts" {
+resource "null_resource" "deploy-cloud-init-scripts" {
   count = local.master_nb
 
   provisioner "local-exec" {
@@ -69,7 +69,7 @@ resource "null_resource" "deploy-cloud-scripts" {
     EOF
   }
 
-  depends_on = [null_resource.prepare-cloud-scripts]
+  depends_on = [null_resource.prepare-cloud-init-scripts]
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
@@ -126,7 +126,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts]
+  depends_on = [null_resource.deploy-cloud-init-scripts]
 }
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
@@ -184,7 +184,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts]
+  depends_on = [null_resource.deploy-cloud-init-scripts]
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
@@ -244,7 +244,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-scripts]
+  depends_on = [null_resource.deploy-cloud-init-scripts]
 }
 
 resource "null_resource" "configure_master_primary" {
