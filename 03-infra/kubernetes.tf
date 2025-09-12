@@ -78,12 +78,13 @@ resource "helm_release" "vault" {
   depends_on = [helm_release.cilium]
 }
 
-resource "null_resource" "sleep-10s" {
+resource "null_resource" "wait-vault-up" {
   provisioner "local-exec" {
     command = <<EOF
-      sleep 10
+      while ! curl https://vault.${var.my_domain}/v1/sys/health; do sleep 2; done
     EOF
   }
+
   depends_on = [helm_release.vault]
 }
 
@@ -96,7 +97,7 @@ resource "vault_generic_secret" "ceph-cluster-id" {
 }
 EOT
 
-  depends_on = [null_resource.sleep-10s]
+  depends_on = [null_resource.wait-vault-up]
 }
 
 resource "null_resource" "ceph-csi-secret" {
