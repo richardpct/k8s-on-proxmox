@@ -75,6 +75,7 @@ resource "null_resource" "deploy-cloud-init-scripts" {
 resource "proxmox_vm_qemu" "loadbalancer" {
   vmid             = "300"
   name             = "loadbalancer"
+  tags             = "loadbalancer"
   target_node      = "pve01"
   agent            = 1
   cpu {
@@ -133,6 +134,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
   count            = local.master_nb
   vmid             = "10${count.index + 1}"
   name             = "k8s-control-plane-${count.index + 1}"
+  tags             = "k8s-control-plane"
   target_node      = "pve0${count.index + 1}"
   agent            = 1
   cpu {
@@ -191,6 +193,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
   count            = local.worker_nb
   vmid             = "20${count.index + 1}"
   name             = "k8s-worker-${count.index + 1}"
+  tags             = "k8s-worker"
   target_node      = "pve0${count.index + 1}"
   agent            = 1
   cpu {
