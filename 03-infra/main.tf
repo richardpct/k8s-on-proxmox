@@ -3,7 +3,7 @@ provider "proxmox" {
   pm_user         = var.pm_user
   pm_password     = var.pm_password
   pm_tls_insecure = true
-  pm_parallel     = 7
+  pm_parallel     = 10
 }
 
 resource "null_resource" "update-images" {
@@ -53,8 +53,6 @@ resource "null_resource" "prepare-cloud-init-scripts" {
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/loadbalancer.yml
     EOF
   }
-
-  depends_on = [null_resource.update-images]
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
