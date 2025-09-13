@@ -24,7 +24,7 @@ resource "null_resource" "default-tls-cert" {
     EOF
   }
 
-  depends_on = [null_resource.configure_masters]
+  depends_on = [null_resource.configure_workers]
 }
 
 resource "helm_release" "cilium" {
@@ -35,7 +35,7 @@ resource "helm_release" "cilium" {
   force_update = true
 
   values = [
-    "${file("helm/cilium-values.yaml")}"
+    "${file("helm-values/cilium.yaml")}"
   ]
 
  set = [
@@ -57,7 +57,7 @@ resource "helm_release" "vault" {
   force_update     = true
 
   values = [
-    "${file("helm/vault-values.yaml")}"
+    "${file("helm-values/vault.yaml")}"
   ]
 
   set = [
@@ -78,12 +78,16 @@ resource "helm_release" "vault" {
   depends_on = [helm_release.cilium]
 }
 
-resource "null_resource" "sleep-10s" {
+resource "null_resource" "wait-vault-up" {
   provisioner "local-exec" {
     command = <<EOF
-      sleep 10
+      while [ "$(curl -s --connect-timeout 2 https://vault.${var.my_domain}/v1/sys/health | jq .initialized)" != 'true' ]
+      do
+        sleep 1
+      done
     EOF
   }
+
   depends_on = [helm_release.vault]
 }
 
@@ -96,7 +100,7 @@ resource "vault_generic_secret" "ceph-cluster-id" {
 }
 EOT
 
-  depends_on = [null_resource.sleep-10s]
+  depends_on = [null_resource.wait-vault-up]
 }
 
 resource "null_resource" "ceph-csi-secret" {
@@ -120,7 +124,7 @@ resource "helm_release" "argo-cd" {
   force_update     = true
 
   values = [
-    "${file("helm/argocd-values.yaml")}"
+    "${file("helm-values/argocd.yaml")}"
   ]
 
   depends_on = [null_resource.ceph-csi-secret]
@@ -135,7 +139,7 @@ resource "helm_release" "argocd-apps" {
   force_update     = true
 
   values = [
-    "${file("helm/argocd-apps-values.yaml")}"
+    "${file("helm-values/argocd-apps.yaml")}"
   ]
 
   depends_on = [helm_release.argo-cd]
