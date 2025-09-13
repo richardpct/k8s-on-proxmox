@@ -81,7 +81,10 @@ resource "helm_release" "vault" {
 resource "null_resource" "wait-vault-up" {
   provisioner "local-exec" {
     command = <<EOF
-      while ! curl https://vault.${var.my_domain}/v1/sys/health; do sleep 2; done
+      while [ "$(curl -s --connect-timeout 2 https://vault.${var.my_domain}/v1/sys/health | jq .initialized)" != 'true' ]
+      do
+        sleep 1
+      done
     EOF
   }
 
