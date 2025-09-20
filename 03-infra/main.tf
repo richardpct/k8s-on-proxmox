@@ -63,11 +63,11 @@ resource "null_resource" "deploy-cloud-init-scripts" {
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
-  vmid             = "300"
-  name             = "loadbalancer"
-  tags             = "loadbalancer"
-  target_node      = "pve01"
-  agent            = 1
+  vmid        = "300"
+  name        = "loadbalancer"
+  tags        = "loadbalancer"
+  target_node = "pve01"
+  agent       = 1
   cpu {
     cores = local.lb_cores
   }
@@ -121,12 +121,12 @@ resource "proxmox_vm_qemu" "loadbalancer" {
 }
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
-  count            = local.master_nb
-  vmid             = "10${count.index + 1}"
-  name             = "k8s-control-plane-${count.index + 1}"
-  tags             = "k8s-control-plane"
-  target_node      = "pve0${count.index + 1}"
-  agent            = 1
+  count       = local.master_nb
+  vmid        = "10${count.index + 1}"
+  name        = "k8s-control-plane-${count.index + 1}"
+  tags        = "k8s-control-plane"
+  target_node = "pve0${count.index + 1}"
+  agent       = 1
   cpu {
     cores = local.master_cores
   }
@@ -180,12 +180,12 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
-  count            = local.worker_nb
-  vmid             = "20${count.index + 1}"
-  name             = "k8s-worker-${count.index + 1}"
-  tags             = "k8s-worker"
-  target_node      = "pve0${count.index + 1}"
-  agent            = 1
+  count       = local.worker_nb
+  vmid        = "20${count.index + 1}"
+  name        = "k8s-worker-${count.index + 1}"
+  tags        = "k8s-worker"
+  target_node = "pve0${count.index + 1}"
+  agent       = 1
   cpu {
     cores = local.worker_cores
   }
@@ -217,7 +217,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
         disk {
           storage = "local-lvm"
           # The size of the disk should be at least as big as the disk in the template. If it's smaller, the disk will be recreated
-          size    = local.worker_disk
+          size = local.worker_disk
         }
       }
     }
@@ -281,8 +281,8 @@ resource "null_resource" "configure_masters_secondary" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index +2} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index +2} 'bash -s' < /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index + 2} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index + 2} 'bash -s' < /tmp/configure-master.sh
     EOF
   }
 

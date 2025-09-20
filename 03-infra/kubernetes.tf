@@ -43,7 +43,7 @@ resource "helm_release" "cilium" {
       name  = "k8sServiceHost"
       value = var.lb_ip
     }
- ]
+  ]
 
   depends_on = [null_resource.default-tls-cert]
 }
