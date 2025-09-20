@@ -1,10 +1,10 @@
 provider "kubernetes" {
-  config_path = "~/.kube/config"
+  config_path = local.kube_config
 }
 
 provider "helm" {
   kubernetes = {
-    config_path = "~/.kube/config"
+    config_path = local.kube_config
   }
 }
 
@@ -38,11 +38,11 @@ resource "helm_release" "cilium" {
     "${file("helm-values/cilium.yaml")}"
   ]
 
- set = [
-   {
-     name  = "k8sServiceHost"
-     value = var.lb_ip
-   }
+  set = [
+    {
+      name  = "k8sServiceHost"
+      value = var.lb_ip
+    }
  ]
 
   depends_on = [null_resource.default-tls-cert]

@@ -4,6 +4,7 @@ locals {
   worker_nb     = 3
   master_cores  = 2
   worker_cores  = 4
+  kube_config   = "~/.kube/config"
   lb_cores      = 2
   master_memory = 4096
   worker_memory = 6144
