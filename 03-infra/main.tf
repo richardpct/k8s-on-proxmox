@@ -1,23 +1,41 @@
 resource "null_resource" "update-images" {
-  count = local.master_nb
+  for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh root@192.168.1.2${count.index} << IMG
+      ssh root@${each.value.pve_ip} << IMG
         cd /root
         [ -d my_isos ] || mkdir my_isos
         cd my_isos
         curl -O https://cloud-images.ubuntu.com/releases/noble/release/SHA256SUMS
         if ! grep ubuntu-24.04-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
           curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img
-          qm destroy 900${count.index} || true
-          qm create 900${count.index} --name ubuntu-24-04-cloudinit
-          qm set 900${count.index} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
-          qm template 900${count.index}
+          qm destroy ${each.value.cloudinit_img_id} || true
+          qm create ${each.value.cloudinit_img_id} --name ubuntu-24-04-cloudinit
+          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
+          qm template ${each.value.cloudinit_img_id}
         fi
 IMG
+    EOF
+  }
+}
+
+resource "null_resource" "ssh_keys_cleanup" {
+  provisioner "local-exec" {
+    command = <<EOF
+      set -x
+
+      ssh-keygen -R ${var.lb_ip}
+
+      for i in ${local.k8s_control_planes_list}; do
+        ssh-keygen -R $i
+      done
+
+      for i in ${local.k8s_workers_list}; do
+        ssh-keygen -R $i
+      done
     EOF
   }
 }
@@ -27,18 +45,21 @@ resource "null_resource" "prepare-cloud-init-scripts" {
     command = <<EOF
       set -x
 
-      sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
-
-      for ((i=1; i <= ${local.master_nb}; i++)); do
-        sed -i -e "/${var.master_subnet}$i/d" ~/.ssh/known_hosts
-      done
-
-      for ((i=1; i <= ${local.worker_nb}; i++)); do
-        sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
-      done
-
       sed -e 's/API_ENDPOINT/${var.lb_ip}/' cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
-      sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' cloud-init/loadbalancer.yml > /tmp/loadbalancer.yml
+
+      cp cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
+
+      for i in ${local.k8s_control_planes_list}; do
+        sed -i '' "/_BACKEND_APISERVERS_/a\\
+              server control-plane-$${i: -1} $i:6443 check
+        " /tmp/loadbalancer.yml
+      done
+
+      for i in ${local.k8s_workers_list}; do
+        sed -i '' "/_BACKEND_WORKERS_/a\\
+              server k8s-worker-$${i: -1} $i:30443 check
+        " /tmp/loadbalancer.yml
+      done
 
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/kubeadm-master.yml
       sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
