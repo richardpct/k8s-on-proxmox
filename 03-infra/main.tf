@@ -143,11 +143,11 @@ resource "proxmox_vm_qemu" "loadbalancer" {
 }
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
-  count       = local.master_nb
-  vmid        = "10${count.index + 1}"
-  name        = "k8s-control-plane-${count.index + 1}"
+  for_each    = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane }
+  vmid        = "${each.value.vmid}"
+  name        = "${each.value.name}"
   tags        = "k8s-control-plane"
-  target_node = "pve0${count.index + 1}"
+  target_node = "${each.value.target_node}"
   agent       = 1
   cpu {
     cores = local.master_cores
@@ -163,7 +163,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
   cicustom   = "vendor=local:snippets/kubeadm-master.yml" # /var/lib/vz/snippets/kubeadm-master.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.master_subnet}${count.index + 1}/${var.cidr},gw=${var.gateway}"
+  ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -202,11 +202,11 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
-  count       = local.worker_nb
-  vmid        = "20${count.index + 1}"
-  name        = "k8s-worker-${count.index + 1}"
+  for_each    = { for k8s_worker in var.k8s_workers : k8s_worker.name => k8s_worker }
+  vmid        = "${each.value.vmid}"
+  name        = "${each.value.name}"
   tags        = "k8s-worker"
-  target_node = "pve0${count.index + 1}"
+  target_node = "${each.value.target_node}"
   agent       = 1
   cpu {
     cores = local.worker_cores
@@ -222,7 +222,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
   cicustom   = "vendor=local:snippets/kubeadm-worker.yml" # /var/lib/vz/snippets/qemu-guest-agent.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.worker_subnet}${count.index + 1}/${var.cidr},gw=${var.gateway}"
+  ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key

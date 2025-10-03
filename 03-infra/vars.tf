@@ -12,6 +12,7 @@ locals {
   master_disk             = "10G"
   worker_disk             = "20G"
   lb_disk                 = "10G"
+  pve_nodes_list          = join(" ", [for pve_node in var.pve_nodes : pve_node.ip])
   k8s_control_planes_list = join(" ", [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip])
   k8s_workers_list        = join(" ", [for k8s_worker in var.k8s_workers : k8s_worker.ip])
 }
@@ -125,23 +126,23 @@ variable "ubuntu_mirror" {
 variable "pve_nodes" {
   type     = list(object({
     name             = string
-    pve_ip           = string
+    ip               = string
     cloudinit_img_id = number
   }))
   default = [
   {
     name             = "pve01"
-    pve_ip           = "192.168.1.20"
+    ip               = "192.168.1.20"
     cloudinit_img_id = 9000
   },
   {
     name             = "pve02"
-    pve_ip           = "192.168.1.21"
+    ip               = "192.168.1.21"
     cloudinit_img_id = 9001
   },
   {
     name             = "pve03"
-    pve_ip           = "192.168.1.22"
+    ip               = "192.168.1.22"
     cloudinit_img_id = 9002
   }
   ]
