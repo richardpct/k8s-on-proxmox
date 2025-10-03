@@ -5,7 +5,7 @@ resource "null_resource" "update-images" {
     command = <<EOF
       set -x
 
-      ssh root@${each.value.pve_ip} << IMG
+      ssh root@${each.value.ip} << IMG
         cd /root
         [ -d my_isos ] || mkdir my_isos
         cd my_isos
@@ -69,14 +69,15 @@ resource "null_resource" "prepare-cloud-init-scripts" {
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
-  count = local.master_nb
-
   provisioner "local-exec" {
     command = <<EOF
       set -x
-      scp /tmp/kubeadm-master.yml root@192.168.1.2${count.index}:/var/lib/vz/snippets/
-      scp /tmp/kubeadm-worker.yml root@192.168.1.2${count.index}:/var/lib/vz/snippets/
-      scp /tmp/loadbalancer.yml root@192.168.1.2${count.index}:/var/lib/vz/snippets/
+
+      for pve_node in ${local.pve_nodes_list}; do
+        scp /tmp/kubeadm-master.yml root@$${pve_node}:/var/lib/vz/snippets/
+        scp /tmp/kubeadm-worker.yml root@$${pve_node}:/var/lib/vz/snippets/
+        scp /tmp/loadbalancer.yml root@$${pve_node}:/var/lib/vz/snippets/
+      done
     EOF
   }
 
