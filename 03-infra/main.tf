@@ -263,20 +263,22 @@ resource "proxmox_vm_qemu" "k8s-worker" {
 }
 
 resource "null_resource" "configure_master_primary" {
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if k8s_control_plane.primary }
+
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      while ! nc -w1 ${var.master_subnet}1 22; do sleep 2; done
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      while ! nc -w1 ${each.value.ip} 22; do sleep 2; done
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
       echo 'sudo su -' > /tmp/configure-master.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
 
       echo 'sudo su -' > /tmp/configure-worker.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
     EOF
   }
 
@@ -284,11 +286,13 @@ resource "null_resource" "configure_master_primary" {
 }
 
 resource "null_resource" "get_kube-config" {
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if k8s_control_plane.primary }
+
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
       chmod 600 ~/.kube/config
     EOF
   }
@@ -297,14 +301,14 @@ resource "null_resource" "get_kube-config" {
 }
 
 resource "null_resource" "configure_masters_secondary" {
-  count = 2
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if ! k8s_control_plane.primary }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index + 2} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index + 2} 'bash -s' < /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'bash -s' < /tmp/configure-master.sh
     EOF
   }
 
@@ -312,14 +316,14 @@ resource "null_resource" "configure_masters_secondary" {
 }
 
 resource "null_resource" "configure_workers" {
-  count = local.worker_nb
+  for_each = { for k8s_worker in var.k8s_workers : k8s_worker.name => k8s_worker }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}${count.index + 1} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}${count.index + 1} 'bash -s' < /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'bash -s' < /tmp/configure-worker.sh
     EOF
   }
 
