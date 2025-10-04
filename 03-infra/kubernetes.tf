@@ -1,18 +1,3 @@
-provider "kubernetes" {
-  config_path = "~/.kube/config"
-}
-
-provider "helm" {
-  kubernetes = {
-    config_path = "~/.kube/config"
-  }
-}
-
-provider "vault" {
-  address = "https://vault.${var.my_domain}"
-  token   = var.vault_token
-}
-
 resource "null_resource" "default-tls-cert" {
   provisioner "local-exec" {
     command = <<EOF
@@ -38,12 +23,12 @@ resource "helm_release" "cilium" {
     "${file("helm-values/cilium.yaml")}"
   ]
 
- set = [
-   {
-     name  = "k8sServiceHost"
-     value = var.lb_ip
-   }
- ]
+  set = [
+    {
+      name  = "k8sServiceHost"
+      value = var.lb_ip
+    }
+  ]
 
   depends_on = [null_resource.default-tls-cert]
 }

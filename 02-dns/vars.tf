@@ -18,6 +18,11 @@ variable "my_domain" {
   description = "domain name"
 }
 
+variable "applications" {
+  type    = list(string)
+  default = ["vault", "argocd", "jenkins"]
+}
+
 variable "lb_ip" {
   type        = string
   description = "load balancer ip"

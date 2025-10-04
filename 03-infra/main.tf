@@ -1,31 +1,41 @@
-provider "proxmox" {
-  pm_api_url      = var.pm_api_url
-  pm_user         = var.pm_user
-  pm_password     = var.pm_password
-  pm_tls_insecure = true
-  pm_parallel     = 10
-}
-
 resource "null_resource" "update-images" {
-  count = local.master_nb
+  for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh root@192.168.1.2${count.index} << IMG
+      ssh root@${each.value.ip} << IMG
         cd /root
         [ -d my_isos ] || mkdir my_isos
         cd my_isos
         curl -O https://cloud-images.ubuntu.com/releases/noble/release/SHA256SUMS
         if ! grep ubuntu-24.04-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
           curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img
-          qm destroy 900${count.index} || true
-          qm create 900${count.index} --name ubuntu-24-04-cloudinit
-          qm set 900${count.index} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
-          qm template 900${count.index}
+          qm destroy ${each.value.cloudinit_img_id} || true
+          qm create ${each.value.cloudinit_img_id} --name ubuntu-24-04-cloudinit
+          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
+          qm template ${each.value.cloudinit_img_id}
         fi
 IMG
+    EOF
+  }
+}
+
+resource "null_resource" "ssh_keys_cleanup" {
+  provisioner "local-exec" {
+    command = <<EOF
+      set -x
+
+      ssh-keygen -R ${var.lb_ip}
+
+      for i in ${local.k8s_control_planes_list}; do
+        ssh-keygen -R $i
+      done
+
+      for i in ${local.k8s_workers_list}; do
+        ssh-keygen -R $i
+      done
     EOF
   }
 }
@@ -35,18 +45,21 @@ resource "null_resource" "prepare-cloud-init-scripts" {
     command = <<EOF
       set -x
 
-      sed -i -e "/${var.lb_ip}/d" ~/.ssh/known_hosts
-
-      for ((i=1; i <= ${local.master_nb}; i++)); do
-        sed -i -e "/${var.master_subnet}$i/d" ~/.ssh/known_hosts
-      done
-
-      for ((i=1; i <= ${local.worker_nb}; i++)); do
-        sed -i -e "/${var.worker_subnet}$i/d" ~/.ssh/known_hosts
-      done
-
       sed -e 's/API_ENDPOINT/${var.lb_ip}/' cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
-      sed -e 's/MASTER_SUBNET/${var.master_subnet}/; s/WORKER_SUBNET/${var.worker_subnet}/' cloud-init/loadbalancer.yml > /tmp/loadbalancer.yml
+
+      cp cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
+
+      for i in ${local.k8s_control_planes_list}; do
+        sed -i '' "/_BACKEND_APISERVERS_/a\\
+              server control-plane-$${i: -1} $i:6443 check
+        " /tmp/loadbalancer.yml
+      done
+
+      for i in ${local.k8s_workers_list}; do
+        sed -i '' "/_BACKEND_WORKERS_/a\\
+              server k8s-worker-$${i: -1} $i:30443 check
+        " /tmp/loadbalancer.yml
+      done
 
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/kubeadm-master.yml
       sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
@@ -56,14 +69,15 @@ resource "null_resource" "prepare-cloud-init-scripts" {
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
-  count = local.master_nb
-
   provisioner "local-exec" {
     command = <<EOF
       set -x
-      scp /tmp/kubeadm-master.yml root@192.168.1.2${count.index}:/var/lib/vz/snippets/
-      scp /tmp/kubeadm-worker.yml root@192.168.1.2${count.index}:/var/lib/vz/snippets/
-      scp /tmp/loadbalancer.yml root@192.168.1.2${count.index}:/var/lib/vz/snippets/
+
+      for pve_node in ${local.pve_nodes_list}; do
+        scp /tmp/kubeadm-master.yml root@$${pve_node}:/var/lib/vz/snippets/
+        scp /tmp/kubeadm-worker.yml root@$${pve_node}:/var/lib/vz/snippets/
+        scp /tmp/loadbalancer.yml root@$${pve_node}:/var/lib/vz/snippets/
+      done
     EOF
   }
 
@@ -71,11 +85,11 @@ resource "null_resource" "deploy-cloud-init-scripts" {
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
-  vmid             = "300"
-  name             = "loadbalancer"
-  tags             = "loadbalancer"
-  target_node      = "pve01"
-  agent            = 1
+  vmid        = "300"
+  name        = "loadbalancer"
+  tags        = "loadbalancer"
+  target_node = "pve01"
+  agent       = 1
   cpu {
     cores = local.lb_cores
   }
@@ -129,12 +143,12 @@ resource "proxmox_vm_qemu" "loadbalancer" {
 }
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
-  count            = local.master_nb
-  vmid             = "10${count.index + 1}"
-  name             = "k8s-control-plane-${count.index + 1}"
-  tags             = "k8s-control-plane"
-  target_node      = "pve0${count.index + 1}"
-  agent            = 1
+  for_each    = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane }
+  vmid        = "${each.value.vmid}"
+  name        = "${each.value.name}"
+  tags        = "k8s-control-plane"
+  target_node = "${each.value.target_node}"
+  agent       = 1
   cpu {
     cores = local.master_cores
   }
@@ -149,7 +163,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
   cicustom   = "vendor=local:snippets/kubeadm-master.yml" # /var/lib/vz/snippets/kubeadm-master.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.master_subnet}${count.index + 1}/${var.cidr},gw=${var.gateway}"
+  ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -188,12 +202,12 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
 }
 
 resource "proxmox_vm_qemu" "k8s-worker" {
-  count            = local.worker_nb
-  vmid             = "20${count.index + 1}"
-  name             = "k8s-worker-${count.index + 1}"
-  tags             = "k8s-worker"
-  target_node      = "pve0${count.index + 1}"
-  agent            = 1
+  for_each    = { for k8s_worker in var.k8s_workers : k8s_worker.name => k8s_worker }
+  vmid        = "${each.value.vmid}"
+  name        = "${each.value.name}"
+  tags        = "k8s-worker"
+  target_node = "${each.value.target_node}"
+  agent       = 1
   cpu {
     cores = local.worker_cores
   }
@@ -208,7 +222,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
   cicustom   = "vendor=local:snippets/kubeadm-worker.yml" # /var/lib/vz/snippets/qemu-guest-agent.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.worker_subnet}${count.index + 1}/${var.cidr},gw=${var.gateway}"
+  ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -225,7 +239,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
         disk {
           storage = "local-lvm"
           # The size of the disk should be at least as big as the disk in the template. If it's smaller, the disk will be recreated
-          size    = local.worker_disk
+          size = local.worker_disk
         }
       }
     }
@@ -249,20 +263,22 @@ resource "proxmox_vm_qemu" "k8s-worker" {
 }
 
 resource "null_resource" "configure_master_primary" {
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if k8s_control_plane.primary }
+
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      while ! nc -w1 ${var.master_subnet}1 22; do sleep 2; done
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      while ! nc -w1 ${each.value.ip} 22; do sleep 2; done
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
       echo 'sudo su -' > /tmp/configure-master.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep "kubeadm join" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep -- "--control-plane --certificate-key" /var/log/cloud-init-output.log | head -n 1' >> /tmp/configure-master.sh
 
       echo 'sudo su -' > /tmp/configure-worker.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep "kubeadm join" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'grep -- "--discovery-token-ca-cert-hash" /var/log/cloud-init-output.log | tail -n 1' >> /tmp/configure-worker.sh
     EOF
   }
 
@@ -270,11 +286,13 @@ resource "null_resource" "configure_master_primary" {
 }
 
 resource "null_resource" "get_kube-config" {
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if k8s_control_plane.primary }
+
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}1 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config
       chmod 600 ~/.kube/config
     EOF
   }
@@ -283,14 +301,14 @@ resource "null_resource" "get_kube-config" {
 }
 
 resource "null_resource" "configure_masters_secondary" {
-  count = 2
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if ! k8s_control_plane.primary }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index +2} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.master_subnet}${count.index +2} 'bash -s' < /tmp/configure-master.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'bash -s' < /tmp/configure-master.sh
     EOF
   }
 
@@ -298,14 +316,14 @@ resource "null_resource" "configure_masters_secondary" {
 }
 
 resource "null_resource" "configure_workers" {
-  count = local.worker_nb
+  for_each = { for k8s_worker in var.k8s_workers : k8s_worker.name => k8s_worker }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}${count.index + 1} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
-      ssh -o StrictHostKeyChecking=accept-new ubuntu@${var.worker_subnet}${count.index + 1} 'bash -s' < /tmp/configure-worker.sh
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'until grep DONE /var/log/cloud-init-output.log; do sleep 2; done'
+      ssh -o StrictHostKeyChecking=accept-new ubuntu@${each.value.ip} 'bash -s' < /tmp/configure-worker.sh
     EOF
   }
 
