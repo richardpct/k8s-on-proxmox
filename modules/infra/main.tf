@@ -45,9 +45,9 @@ resource "null_resource" "prepare-cloud-init-scripts" {
     command = <<EOF
       set -x
 
-      sed -e 's/API_ENDPOINT/${var.lb_ip}/' cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
+      sed -e 's/API_ENDPOINT/${var.lb_ip}/' ${path.module}/cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
 
-      cp cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
+      cp ${path.module}/cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
 
       for i in ${local.k8s_control_planes_list}; do
         sed -i '' "/_BACKEND_APISERVERS_/a\\
@@ -62,7 +62,7 @@ resource "null_resource" "prepare-cloud-init-scripts" {
       done
 
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/kubeadm-master.yml
-      sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
+      sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' ${path.module}/cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/loadbalancer.yml
     EOF
   }

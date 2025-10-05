@@ -1,3 +1,14 @@
+resource "null_resource" "wait_kubernetes_ready" {
+  provisioner "local-exec" {
+    command = <<EOF
+      while ! kubectl cluster-info; do
+        sleep 2
+      done
+    EOF
+  }
+}
+
+
 resource "null_resource" "default-tls-cert" {
   provisioner "local-exec" {
     command = <<EOF
@@ -9,7 +20,7 @@ resource "null_resource" "default-tls-cert" {
     EOF
   }
 
-  depends_on = [null_resource.configure_workers]
+  depends_on = [null_resource.wait_kubernetes_ready]
 }
 
 resource "helm_release" "cilium" {
@@ -20,7 +31,7 @@ resource "helm_release" "cilium" {
   force_update = true
 
   values = [
-    "${file("helm-values/cilium.yaml")}"
+    "${file("${path.module}/helm-values/cilium.yaml")}"
   ]
 
   set = [
@@ -42,7 +53,7 @@ resource "helm_release" "vault" {
   force_update     = true
 
   values = [
-    "${file("helm-values/vault.yaml")}"
+    "${file("${path.module}/helm-values/vault.yaml")}"
   ]
 
   set = [
@@ -109,7 +120,7 @@ resource "helm_release" "argo-cd" {
   force_update     = true
 
   values = [
-    "${file("helm-values/argocd.yaml")}"
+    "${file("${path.module}/helm-values/argocd.yaml")}"
   ]
 
   depends_on = [null_resource.ceph-csi-secret]
@@ -124,7 +135,7 @@ resource "helm_release" "argocd-apps" {
   force_update     = true
 
   values = [
-    "${file("helm-values/argocd-apps.yaml")}"
+    "${file("${path.module}/helm-values/argocd-apps.yaml")}"
   ]
 
   depends_on = [helm_release.argo-cd]

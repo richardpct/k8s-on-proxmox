@@ -1,9 +1,9 @@
 variable "region" {
   type        = string
-  description = "Region"
+  description = "region"
 }
 
 variable "bucket" {
   type        = string
-  description = "Bucket"
+  description = "bucket"
 }
