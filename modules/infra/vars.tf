@@ -66,7 +66,7 @@ variable "ubuntu_mirror" {
 }
 
 variable "pve_nodes" {
-  type     = list(object({
+  type = list(object({
     name             = string
     ip               = string
     cloudinit_img_id = number

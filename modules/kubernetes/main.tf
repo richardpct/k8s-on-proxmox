@@ -1,3 +1,13 @@
+data "terraform_remote_state" "certificate" {
+  backend = "s3"
+
+  config = {
+    bucket = var.bucket
+    key    = var.key_certificate
+    region = var.region
+  }
+}
+
 resource "null_resource" "wait_kubernetes_ready" {
   provisioner "local-exec" {
     command = <<EOF
@@ -7,7 +17,6 @@ resource "null_resource" "wait_kubernetes_ready" {
     EOF
   }
 }
-
 
 resource "null_resource" "default-tls-cert" {
   provisioner "local-exec" {
