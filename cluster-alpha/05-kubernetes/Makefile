@@ -12,7 +12,7 @@ help: ## Show help
 $(TERRAFORM_LOCK):
 	tofu init \
 		-backend-config="bucket=${TF_VAR_bucket}" \
-		-backend-config="key=${TF_VAR_key_infra}" \
+		-backend-config="key=${TF_VAR_key_kubernetes}" \
 		-backend-config="region=${TF_VAR_region}"
 
 .PHONY: init
@@ -20,7 +20,7 @@ init: $(TERRAFORM_LOCK) ## Init
 
 .PHONY: apply
 apply: init ## Create the infrastructure
-	gtime tofu apply -auto-approve
+	gtime make apply -C ../04-infra && gtime tofu apply -auto-approve
 
 .PHONY: plan
 plan: init ## Dry run
@@ -32,9 +32,13 @@ destroy: ## Destroy the infrastructure
 	tofu state rm module.kubernetes.helm_release.argocd-apps 2> /dev/null || true
 	tofu state rm module.kubernetes.helm_release.cilium 2> /dev/null || true
 	tofu state rm module.kubernetes.helm_release.vault 2> /dev/null || true
+	tofu state rm module.kubernetes.data.terraform_remote_state.certificate 2> /dev/null || true
+	tofu state rm module.kubernetes.null_resource.ceph-csi-secret 2> /dev/null || true
+	tofu state rm module.kubernetes.null_resource.default-tls-cert 2> /dev/null || true
+	tofu state rm module.kubernetes.null_resource.wait-vault-up 2> /dev/null || true
+	tofu state rm module.kubernetes.null_resource.wait_kubernetes_ready 2> /dev/null || true
 	tofu state rm module.kubernetes.vault_generic_secret.ceph-cluster-id 2> /dev/null || true
-	tofu destroy -auto-approve
-	@rm -fv *.backup
+	make destroy -C ../04-infra
 
 .PHONY: clean
 clean: ## Clean
