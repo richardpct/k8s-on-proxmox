@@ -115,7 +115,7 @@ resource "kubernetes_namespace" "ceph-csi" {
     name = "ceph-csi"
   }
 
-  depends_on = [helm_release.vault]
+  depends_on = [null_resource.wait_kubernetes_ready]
 }
 
 resource "kubernetes_secret" "csi-cephfs-secret" {
@@ -145,7 +145,7 @@ resource "kubernetes_cluster_role" "ceph-csi-cephfs-provisioner-custom" {
     verbs      = ["list", "get", "watch"]
   }
 
-  depends_on = [kubernetes_secret.csi-cephfs-secret]
+  depends_on = [null_resource.wait_kubernetes_ready]
 }
 
 resource "kubernetes_cluster_role_binding" "ceph-csi-cephfs-provisioner-custom" {
@@ -163,7 +163,7 @@ resource "kubernetes_cluster_role_binding" "ceph-csi-cephfs-provisioner-custom" 
     namespace = "ceph-csi"
   }
 
-  depends_on = [kubernetes_cluster_role.ceph-csi-cephfs-provisioner-custom]
+  depends_on = [kubernetes_namespace.ceph-csi, kubernetes_cluster_role.ceph-csi-cephfs-provisioner-custom]
 }
 
 resource "helm_release" "argo-cd" {
