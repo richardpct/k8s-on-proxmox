@@ -65,6 +65,12 @@ variable "ubuntu_mirror" {
   default     = "http://fr.archive.ubuntu.com/ubuntu/"
 }
 
+variable "ubuntu_version" {
+  type        = string
+  description = "ubuntu version"
+  default     = "24.04"
+}
+
 variable "pve_nodes" {
   type = list(object({
     name             = string

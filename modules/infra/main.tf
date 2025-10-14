@@ -10,11 +10,11 @@ resource "null_resource" "update-images" {
         [ -d my_isos ] || mkdir my_isos
         cd my_isos
         curl -O https://cloud-images.ubuntu.com/releases/noble/release/SHA256SUMS
-        if ! grep ubuntu-24.04-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
-          curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img
+        if ! grep ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
+          curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
           qm destroy ${each.value.cloudinit_img_id} || true
-          qm create ${each.value.cloudinit_img_id} --name ubuntu-24-04-cloudinit
-          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
+          qm create ${each.value.cloudinit_img_id} --name ubuntu-${var.ubuntu_version}-cloudinit
+          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
           qm template ${each.value.cloudinit_img_id}
         fi
 IMG
