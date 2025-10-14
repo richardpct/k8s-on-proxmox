@@ -1,5 +1,9 @@
 terraform {
   required_providers {
+    kubernetes = {
+      source  = "opentofu/kubernetes"
+      version = "2.38.0"
+    }
     helm = {
       source  = "opentofu/helm"
       version = "3.0.2"
@@ -9,6 +13,10 @@ terraform {
       version = "5.3.0"
     }
   }
+}
+
+provider "kubernetes" {
+  config_path = local.kube_config
 }
 
 provider "helm" {

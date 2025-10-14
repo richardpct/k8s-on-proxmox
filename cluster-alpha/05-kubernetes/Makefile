@@ -28,17 +28,8 @@ plan: init ## Dry run
 
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
-	tofu state rm module.kubernetes.helm_release.argo-cd 2> /dev/null || true
-	tofu state rm module.kubernetes.helm_release.argocd-apps 2> /dev/null || true
-	tofu state rm module.kubernetes.helm_release.cilium 2> /dev/null || true
-	tofu state rm module.kubernetes.helm_release.vault 2> /dev/null || true
-	tofu state rm module.kubernetes.data.terraform_remote_state.certificate 2> /dev/null || true
-	tofu state rm module.kubernetes.null_resource.ceph-csi-secret 2> /dev/null || true
-	tofu state rm module.kubernetes.null_resource.default-tls-cert 2> /dev/null || true
-	tofu state rm module.kubernetes.null_resource.wait-vault-up 2> /dev/null || true
-	tofu state rm module.kubernetes.null_resource.wait_kubernetes_ready 2> /dev/null || true
-	tofu state rm module.kubernetes.vault_generic_secret.ceph-cluster-id 2> /dev/null || true
-	make destroy -C ../04-infra
+	tofu state ls | while read; do tofu state rm $$REPLY; done
+	tofu destroy -auto-approve && make destroy -C ../04-infra
 
 .PHONY: clean
 clean: ## Clean

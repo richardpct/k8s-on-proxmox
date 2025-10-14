@@ -18,15 +18,17 @@ resource "null_resource" "wait_kubernetes_ready" {
   }
 }
 
-resource "null_resource" "default-tls-cert" {
-  provisioner "local-exec" {
-    command = <<EOF
-      echo "${data.terraform_remote_state.certificate.outputs.wildcard_certificate}" > /tmp/wildcard.crt
-      echo "${data.terraform_remote_state.certificate.outputs.wildcard_private_key}" > /tmp/wildcard.key
-      kubectl -n kube-system create secret tls default-tls-cert --cert=/tmp/wildcard.crt --key=/tmp/wildcard.key
-      rm /tmp/wildcard.crt
-      rm /tmp/wildcard.key
-    EOF
+resource "kubernetes_secret" "default-tls-cert" {
+  metadata {
+    name      = "default-tls-cert"
+    namespace = "kube-system"
+  }
+
+  type = "kubernetes.io/tls"
+
+  data = {
+    "tls.crt" = data.terraform_remote_state.certificate.outputs.wildcard_certificate
+    "tls.key" = data.terraform_remote_state.certificate.outputs.wildcard_private_key
   }
 
   depends_on = [null_resource.wait_kubernetes_ready]
@@ -50,7 +52,7 @@ resource "helm_release" "cilium" {
     }
   ]
 
-  depends_on = [null_resource.default-tls-cert]
+  depends_on = [kubernetes_secret.default-tls-cert]
 }
 
 resource "helm_release" "vault" {
@@ -108,16 +110,60 @@ EOT
   depends_on = [null_resource.wait-vault-up]
 }
 
-resource "null_resource" "ceph-csi-secret" {
-  provisioner "local-exec" {
-    command = <<EOF
-      kubectl create ns ceph-csi
-      kubectl -n ceph-csi create secret generic csi-cephfs-secret --from-literal=userID=admin --from-literal=userKey=${var.cephfs_secret}
-      kubectl create clusterrole ceph-csi-cephfs-provisioner-custom --verb=list,get,watch --resource=volumeattachments.storage.k8s.io
-      kubectl create clusterrolebinding ceph-csi-cephfs-provisioner-custom --clusterrole=ceph-csi-cephfs-provisioner-custom --serviceaccount=ceph-csi:ceph-csi-ceph-csi-cephfs-provisioner
-    EOF
+resource "kubernetes_namespace" "ceph-csi" {
+  metadata {
+    name = "ceph-csi"
   }
+
   depends_on = [helm_release.vault]
+}
+
+resource "kubernetes_secret" "csi-cephfs-secret" {
+  metadata {
+    name      = "csi-cephfs-secret"
+    namespace = "ceph-csi"
+  }
+
+  type = "Opaque"
+
+  data = {
+    "userID"  = "admin"
+    "userKey" = var.cephfs_secret
+  }
+
+  depends_on = [kubernetes_namespace.ceph-csi]
+}
+
+resource "kubernetes_cluster_role" "ceph-csi-cephfs-provisioner-custom" {
+  metadata {
+    name = "ceph-csi-cephfs-provisioner-custom"
+  }
+
+  rule {
+    api_groups = ["storage.k8s.io"]
+    resources  = ["volumeattachments"]
+    verbs      = ["list", "get", "watch"]
+  }
+
+  depends_on = [kubernetes_secret.csi-cephfs-secret]
+}
+
+resource "kubernetes_cluster_role_binding" "ceph-csi-cephfs-provisioner-custom" {
+  metadata {
+    name = "ceph-csi-cephfs-provisioner-custom"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "ceph-csi-cephfs-provisioner-custom"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "ceph-csi-ceph-csi-cephfs-provisioner"
+    namespace = "ceph-csi"
+  }
+
+  depends_on = [kubernetes_cluster_role.ceph-csi-cephfs-provisioner-custom]
 }
 
 resource "helm_release" "argo-cd" {
@@ -132,7 +178,7 @@ resource "helm_release" "argo-cd" {
     "${file("${path.module}/helm-values/argocd.yaml")}"
   ]
 
-  depends_on = [null_resource.ceph-csi-secret]
+  depends_on = [kubernetes_cluster_role_binding.ceph-csi-cephfs-provisioner-custom]
 }
 
 resource "helm_release" "argocd-apps" {
