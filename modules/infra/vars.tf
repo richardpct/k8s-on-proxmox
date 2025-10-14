@@ -1,5 +1,5 @@
 locals {
-  clone                   = "ubuntu-24-04-cloudinit"
+  clone                   = "ubuntu-${var.ubuntu_version}-cloudinit"
   master_cores            = 2
   worker_cores            = 4
   lb_cores                = 2
