@@ -11,6 +11,7 @@ module "infra" {
   pm_password    = var.pm_password
   ubuntu_mirror  = "http://fr.archive.ubuntu.com/ubuntu/"
   ubuntu_version = "24.04"
+  is_prod        = "false"
   pve_nodes = [
     { name = "pve01", ip = "192.168.1.20", cloudinit_img_id = 9000 },
     { name = "pve02", ip = "192.168.1.21", cloudinit_img_id = 9001 },
