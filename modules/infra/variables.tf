@@ -99,3 +99,13 @@ variable "k8s_workers" {
     target_node = string
   }))
 }
+
+variable "load_balancers" {
+  type = list(object({
+    name        = string
+    vmid        = number
+    ip          = string
+    cidr_prefix = number
+    target_node = string
+  }))
+}

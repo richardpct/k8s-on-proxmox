@@ -85,10 +85,11 @@ resource "null_resource" "deploy-cloud-init-scripts" {
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
-  vmid        = "300"
-  name        = "loadbalancer"
+  for_each    = { for load_balancer in var.load_balancers : load_balancer.name => load_balancer }
+  vmid        = each.value.vmid
+  name        = each.value.name
   tags        = "loadbalancer"
-  target_node = "pve01"
+  target_node = each.value.target_node
   agent       = 1
   cpu {
     cores = local.lb_cores
@@ -104,7 +105,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/loadbalancer.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.lb_ip}/24,gw=${var.gateway}"
+  ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key

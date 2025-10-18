@@ -26,4 +26,7 @@ module "infra" {
     { name = "k8s-worker-02", vmid = 202, ip = "192.168.1.122", cidr_prefix = 24, target_node = "pve02" },
     { name = "k8s-worker-03", vmid = 203, ip = "192.168.1.123", cidr_prefix = 24, target_node = "pve03" }
   ]
+  load_balancers = [
+    { name = "load-balancer-01", vmid = 301, ip = "192.168.1.130", cidr_prefix = 24, target_node = "pve01" },
+  ]
 }
