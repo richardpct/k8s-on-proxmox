@@ -17,9 +17,9 @@ variable "key_certificate" {
   description = "certificate key"
 }
 
-variable "lb_ip" {
+variable "key_dns" {
   type        = string
-  description = "lb ip"
+  description = "dns key"
 }
 
 variable "cephfs_secret" {

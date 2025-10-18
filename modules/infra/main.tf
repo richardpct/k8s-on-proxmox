@@ -1,3 +1,13 @@
+data "terraform_remote_state" "dns" {
+  backend = "s3"
+
+  config = {
+    bucket = var.bucket
+    key    = var.key_dns
+    region = var.region
+  }
+}
+
 resource "null_resource" "update-images" {
   for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
 
@@ -27,7 +37,7 @@ resource "null_resource" "ssh_keys_cleanup" {
     command = <<EOF
       set -x
 
-      ssh-keygen -R ${var.lb_ip}
+      ssh-keygen -R ${data.terraform_remote_state.dns.outputs.lb_ip}
 
       for i in ${local.k8s_control_planes_list}; do
         ssh-keygen -R $i
@@ -45,7 +55,7 @@ resource "null_resource" "prepare-cloud-init-scripts" {
     command = <<EOF
       set -x
 
-      sed -e 's/API_ENDPOINT/${var.lb_ip}/' ${path.module}/cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
+      sed -e 's/API_ENDPOINT/${data.terraform_remote_state.dns.outputs.lb_ip}/' ${path.module}/cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
 
       cp ${path.module}/cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
 

@@ -2,9 +2,9 @@ module "infra" {
   source         = "../../modules/infra"
   region         = "eu-west-3"
   bucket         = var.bucket
+  key_dns        = var.key_dns
   nameserver     = var.nameserver
   gateway        = var.gateway
-  lb_ip          = "192.168.1.130"
   public_ssh_key = var.public_ssh_key
   pm_api_url     = "https://192.168.1.20:8006/api2/json"
   pm_user        = var.pm_user

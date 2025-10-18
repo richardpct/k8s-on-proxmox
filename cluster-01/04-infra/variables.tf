@@ -3,6 +3,11 @@ variable "bucket" {
   description = "bucket"
 }
 
+variable "key_dns" {
+  type        = string
+  description = "dns key"
+}
+
 variable "nameserver" {
   type        = string
   description = "nameserver"

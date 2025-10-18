@@ -8,6 +8,11 @@ variable "key_certificate" {
   description = "certificate key"
 }
 
+variable "key_dns" {
+  type        = string
+  description = "dns key"
+}
+
 variable "cephfs_secret" {
   type        = string
   description = "ceph secret"

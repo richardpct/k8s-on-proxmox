@@ -24,6 +24,11 @@ variable "bucket" {
   description = "bucket"
 }
 
+variable "key_dns" {
+  type        = string
+  description = "dns key"
+}
+
 variable "nameserver" {
   type        = string
   description = "nameserver"
@@ -32,11 +37,6 @@ variable "nameserver" {
 variable "gateway" {
   type        = string
   description = "gateway"
-}
-
-variable "lb_ip" {
-  type        = string
-  description = "lb ip"
 }
 
 variable "public_ssh_key" {

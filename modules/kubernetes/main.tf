@@ -8,6 +8,16 @@ data "terraform_remote_state" "certificate" {
   }
 }
 
+data "terraform_remote_state" "dns" {
+  backend = "s3"
+
+  config = {
+    bucket = var.bucket
+    key    = var.key_dns
+    region = var.region
+  }
+}
+
 resource "null_resource" "wait_kubernetes_ready" {
   provisioner "local-exec" {
     command = <<EOF
@@ -48,7 +58,7 @@ resource "helm_release" "cilium" {
   set = [
     {
       name  = "k8sServiceHost"
-      value = var.lb_ip
+      value = data.terraform_remote_state.dns.outputs.lb_ip
     }
   ]
 
