@@ -50,12 +50,29 @@ resource "null_resource" "ssh_keys_cleanup" {
   }
 }
 
+resource "local_file" "kubeadm-master" {
+  filename = "/tmp/kubeadm-master.yml"
+  content  = templatefile("${path.module}/cloud-init/kubeadm-master.tftpl",
+                          {
+                            lb_ip         = data.terraform_remote_state.dns.outputs.lb_ip
+                            ubuntu_mirror = var.ubuntu_mirror
+                          }
+                         )
+}
+
+resource "local_file" "kubeadm-worker" {
+  filename = "/tmp/kubeadm-worker.yml"
+  content  = templatefile("${path.module}/cloud-init/kubeadm-worker.tftpl",
+                          {
+                            ubuntu_mirror = var.ubuntu_mirror
+                          }
+                         )
+}
+
 resource "null_resource" "prepare-cloud-init-scripts" {
   provisioner "local-exec" {
     command = <<EOF
       set -x
-
-      sed -e 's/API_ENDPOINT/${data.terraform_remote_state.dns.outputs.lb_ip}/' ${path.module}/cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
 
       cp ${path.module}/cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
 
@@ -71,8 +88,6 @@ resource "null_resource" "prepare-cloud-init-scripts" {
         " /tmp/loadbalancer.yml
       done
 
-      sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/kubeadm-master.yml
-      sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' ${path.module}/cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
       sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/loadbalancer.yml
     EOF
   }

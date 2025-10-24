@@ -4,6 +4,10 @@ terraform {
       source  = "Telmate/proxmox"
       version = "3.0.2-rc04"
     }
+    local = {
+      source  = "opentofu/local"
+      version = "2.5.3"
+    }
   }
 }
 

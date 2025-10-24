@@ -1,7 +1,7 @@
 #cloud-config
 package_update: true
 write_files:
-  - path: /tmp/master.sh
+  - path: /tmp/worker.sh
     content: |
       #!/usr/bin/env bash
 
@@ -10,21 +10,20 @@ write_files:
       apt install -y qemu-guest-agent
       systemctl start qemu-guest-agent
 
-      apt-get update -y
+      apt-get update
       #apt-get upgrade -y
       apt-get install -y \
         apt-transport-https \
         ca-certificates \
         curl \
         gnupg \
-        etcd-client \
+        ncat \
+        nvme-cli \
         nfs-common \
         netcat-openbsd \
         open-iscsi \
         vim \
-        less \
-        bash-completion \
-        bsdmainutils
+        less
 
       cat <<EOF | tee /etc/modules-load.d/k8s.conf
       overlay
@@ -87,9 +86,9 @@ write_files:
 
       # RUNC
       RUNC_VERS=$(curl -s https://github.com/opencontainers/runc | grep '/releases/tag/v' | sed -e 's/.*\(.[0-9]*\.[0-9]*\.[0-9]\).*/\1/')
-
+      
       cd /root
-
+      
       curl -L -O https://github.com/opencontainers/runc/releases/download/v$RUNC_VERS/runc.amd64
       install -m 755 runc.amd64 /usr/local/sbin/runc
       rm runc.amd64
@@ -111,18 +110,9 @@ write_files:
       curl -fsSL https://pkgs.k8s.io/core:/stable:/v$KUBE_VERS/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v$KUBE_VERS/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
 
-      apt-get update -y
+      apt-get update
       apt-get install -y kubelet kubeadm kubectl
       apt-mark hold kubelet kubeadm kubectl
-
-      # CREATE CLUSTER, only the first control plane performs kubeadm init
-      if hostname | grep '\-01$'; then
-        kubeadm init \
-          --control-plane-endpoint "API_ENDPOINT:6443" \
-          --skip-phases=addon/kube-proxy \
-          --apiserver-cert-extra-sans=API_ENDPOINT \
-          --upload-certs
-      fi
 
       echo 'DONE'
     permissions: '0755'
@@ -130,9 +120,9 @@ apt:
   preserve_sources_list: false
   primary:
     - arches: [default]
-      uri: _UBUNTU_MIRROR_
+      uri: ${ubuntu_mirror}
   security:
     - arches: [default]
       uri: http://security.ubuntu.com/ubuntu
 runcmd:
- - [sh, "/tmp/master.sh"]
+ - [sh, "/tmp/worker.sh"]
