@@ -81,15 +81,15 @@ resource "local_file" "loadbalancer" {
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
+  for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
+
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      for pve_node in ${local.pve_nodes_list}; do
-        scp /tmp/kubeadm-master.yml root@$${pve_node}:/var/lib/vz/snippets/
-        scp /tmp/kubeadm-worker.yml root@$${pve_node}:/var/lib/vz/snippets/
-        scp /tmp/loadbalancer.yml root@$${pve_node}:/var/lib/vz/snippets/
-      done
+      scp /tmp/kubeadm-master.yml root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/kubeadm-worker.yml root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/loadbalancer.yml   root@${each.value.ip}:/var/lib/vz/snippets/
     EOF
   }
 

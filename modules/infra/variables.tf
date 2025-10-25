@@ -10,7 +10,6 @@ locals {
   worker_disk             = "20G"
   lb_disk                 = "10G"
   storage                 = var.is_prod ? "mypool" : "local-lvm"
-  pve_nodes_list          = join(" ", [for pve_node in var.pve_nodes : pve_node.ip])
   k8s_control_planes_list = join(" ", [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip])
   k8s_workers_list        = join(" ", [for k8s_worker in var.k8s_workers : k8s_worker.ip])
 }
