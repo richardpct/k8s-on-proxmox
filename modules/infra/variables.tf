@@ -9,6 +9,8 @@ locals {
   master_disk             = "10G"
   worker_disk             = "20G"
   lb_disk                 = "10G"
+  k8s_api_port            = 6443
+  k8s_ingress_port        = 30443
   storage                 = var.is_prod ? "mypool" : "local-lvm"
   k8s_control_planes_list = join(" ", [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip])
   k8s_workers_list        = join(" ", [for k8s_worker in var.k8s_workers : k8s_worker.ip])

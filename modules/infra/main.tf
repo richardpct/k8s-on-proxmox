@@ -75,6 +75,8 @@ resource "local_file" "loadbalancer" {
     {
       backend_apiservers = [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip]
       backend_workers    = [for k8s_worker in var.k8s_workers : k8s_worker.ip]
+      k8s_api_port       = local.k8s_api_port
+      k8s_ingress_port   = local.k8s_ingress_port
       ubuntu_mirror      = var.ubuntu_mirror
     }
   )
