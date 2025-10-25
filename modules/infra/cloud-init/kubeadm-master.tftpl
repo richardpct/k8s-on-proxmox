@@ -1,7 +1,7 @@
 #cloud-config
 package_update: true
 write_files:
-  - path: /tmp/master.sh
+  - path: /tmp/configure-master.sh
     content: |
       #!/usr/bin/env bash
 
@@ -135,4 +135,4 @@ apt:
     - arches: [default]
       uri: http://security.ubuntu.com/ubuntu
 runcmd:
- - [sh, "/tmp/master.sh"]
+ - [sh, "/tmp/configure-master.sh"]

@@ -1,7 +1,7 @@
 #cloud-config
 package_update: true
 write_files:
-  - path: /tmp/lb.sh
+  - path: /tmp/configure-loadbalancer.sh
     content: |
       #!/usr/bin/env bash
 
@@ -90,4 +90,4 @@ apt:
     - arches: [default]
       uri: http://security.ubuntu.com/ubuntu
 runcmd:
- - [sh, "/tmp/lb.sh"]
+ - [sh, "/tmp/configure-loadbalancer.sh"]
