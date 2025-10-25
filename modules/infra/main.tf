@@ -1,3 +1,13 @@
+data "terraform_remote_state" "dns" {
+  backend = "s3"
+
+  config = {
+    bucket = var.bucket
+    key    = var.key_dns
+    region = var.region
+  }
+}
+
 resource "null_resource" "update-images" {
   for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
 
@@ -10,11 +20,11 @@ resource "null_resource" "update-images" {
         [ -d my_isos ] || mkdir my_isos
         cd my_isos
         curl -O https://cloud-images.ubuntu.com/releases/noble/release/SHA256SUMS
-        if ! grep ubuntu-24.04-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
-          curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img
+        if ! grep ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
+          curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
           qm destroy ${each.value.cloudinit_img_id} || true
-          qm create ${each.value.cloudinit_img_id} --name ubuntu-24-04-cloudinit
-          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-24.04-server-cloudimg-amd64.img
+          qm create ${each.value.cloudinit_img_id} --name ubuntu-${var.ubuntu_version}-cloudinit
+          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
           qm template ${each.value.cloudinit_img_id}
         fi
 IMG
@@ -27,7 +37,7 @@ resource "null_resource" "ssh_keys_cleanup" {
     command = <<EOF
       set -x
 
-      ssh-keygen -R ${var.lb_ip}
+      ssh-keygen -R ${data.terraform_remote_state.dns.outputs.lb_ip}
 
       for i in ${local.k8s_control_planes_list}; do
         ssh-keygen -R $i
@@ -40,32 +50,34 @@ resource "null_resource" "ssh_keys_cleanup" {
   }
 }
 
-resource "null_resource" "prepare-cloud-init-scripts" {
-  provisioner "local-exec" {
-    command = <<EOF
-      set -x
+resource "local_file" "kubeadm-master" {
+  filename = "/tmp/kubeadm-master.yml"
+  content = templatefile("${path.module}/cloud-init/kubeadm-master.tftpl",
+    {
+      lb_ip         = data.terraform_remote_state.dns.outputs.lb_ip
+      ubuntu_mirror = var.ubuntu_mirror
+    }
+  )
+}
 
-      sed -e 's/API_ENDPOINT/${var.lb_ip}/' cloud-init/kubeadm-master.yml > /tmp/kubeadm-master.yml
+resource "local_file" "kubeadm-worker" {
+  filename = "/tmp/kubeadm-worker.yml"
+  content = templatefile("${path.module}/cloud-init/kubeadm-worker.tftpl",
+    {
+      ubuntu_mirror = var.ubuntu_mirror
+    }
+  )
+}
 
-      cp cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
-
-      for i in ${local.k8s_control_planes_list}; do
-        sed -i '' "/_BACKEND_APISERVERS_/a\\
-              server control-plane-$${i: -1} $i:6443 check
-        " /tmp/loadbalancer.yml
-      done
-
-      for i in ${local.k8s_workers_list}; do
-        sed -i '' "/_BACKEND_WORKERS_/a\\
-              server k8s-worker-$${i: -1} $i:30443 check
-        " /tmp/loadbalancer.yml
-      done
-
-      sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/kubeadm-master.yml
-      sed -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' cloud-init/kubeadm-worker.yml > /tmp/kubeadm-worker.yml
-      sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/loadbalancer.yml
-    EOF
-  }
+resource "local_file" "loadbalancer" {
+  filename = "/tmp/loadbalancer.yml"
+  content = templatefile("${path.module}/cloud-init/loadbalancer.tftpl",
+    {
+      backend_apiservers = [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip]
+      backend_workers    = [for k8s_worker in var.k8s_workers : k8s_worker.ip]
+      ubuntu_mirror      = var.ubuntu_mirror
+    }
+  )
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
@@ -81,14 +93,15 @@ resource "null_resource" "deploy-cloud-init-scripts" {
     EOF
   }
 
-  depends_on = [null_resource.prepare-cloud-init-scripts]
+  depends_on = [local_file.kubeadm-master, local_file.kubeadm-worker, local_file.loadbalancer]
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
-  vmid        = "300"
-  name        = "loadbalancer"
+  for_each    = { for load_balancer in var.load_balancers : load_balancer.name => load_balancer }
+  vmid        = each.value.vmid
+  name        = each.value.name
   tags        = "loadbalancer"
-  target_node = "pve01"
+  target_node = each.value.target_node
   agent       = 1
   cpu {
     cores = local.lb_cores
@@ -104,7 +117,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/loadbalancer.yml
   ciupgrade  = true
   nameserver = var.nameserver
-  ipconfig0  = "ip=${var.lb_ip}/24,gw=${var.gateway}"
+  ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
   skip_ipv6  = true
   ciuser     = "ubuntu"
   sshkeys    = var.public_ssh_key
@@ -118,7 +131,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     scsi {
       scsi0 {
         disk {
-          storage = "local-lvm"
+          storage = local.storage
           size    = local.lb_disk
         }
       }
@@ -127,7 +140,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "local-lvm"
+          storage = local.storage
         }
       }
     }
@@ -144,10 +157,10 @@ resource "proxmox_vm_qemu" "loadbalancer" {
 
 resource "proxmox_vm_qemu" "k8s-control-plane" {
   for_each    = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane }
-  vmid        = "${each.value.vmid}"
-  name        = "${each.value.name}"
+  vmid        = each.value.vmid
+  name        = each.value.name
   tags        = "k8s-control-plane"
-  target_node = "${each.value.target_node}"
+  target_node = each.value.target_node
   agent       = 1
   cpu {
     cores = local.master_cores
@@ -177,7 +190,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     scsi {
       scsi0 {
         disk {
-          storage = "local-lvm"
+          storage = local.storage
           size    = local.master_disk
         }
       }
@@ -186,7 +199,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "local-lvm"
+          storage = local.storage
         }
       }
     }
@@ -203,10 +216,10 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
 
 resource "proxmox_vm_qemu" "k8s-worker" {
   for_each    = { for k8s_worker in var.k8s_workers : k8s_worker.name => k8s_worker }
-  vmid        = "${each.value.vmid}"
-  name        = "${each.value.name}"
+  vmid        = each.value.vmid
+  name        = each.value.name
   tags        = "k8s-worker"
-  target_node = "${each.value.target_node}"
+  target_node = each.value.target_node
   agent       = 1
   cpu {
     cores = local.worker_cores
@@ -237,7 +250,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       scsi0 {
         # We have to specify the disk from our template, else Terraform will think it's not supposed to be there
         disk {
-          storage = "local-lvm"
+          storage = local.storage
           # The size of the disk should be at least as big as the disk in the template. If it's smaller, the disk will be recreated
           size = local.worker_disk
         }
@@ -247,7 +260,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
       # Some images require a cloud-init disk on the IDE controller, others on the SCSI or SATA controller
       ide1 {
         cloudinit {
-          storage = "local-lvm"
+          storage = local.storage
         }
       }
     }
@@ -301,7 +314,7 @@ resource "null_resource" "get_kube-config" {
 }
 
 resource "null_resource" "configure_masters_secondary" {
-  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if ! k8s_control_plane.primary }
+  for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if !k8s_control_plane.primary }
 
   provisioner "local-exec" {
     command = <<EOF

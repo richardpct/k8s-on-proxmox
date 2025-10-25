@@ -66,13 +66,17 @@ write_files:
               balance roundrobin
               mode tcp
               option tcp-check
-              #_BACKEND_APISERVERS_
- 
+%{ for ip in backend_apiservers ~}
+              server control-plane-${ip} ${ip}:6443 check
+%{ endfor ~}
+
       backend kube-ingress-worker
               balance roundrobin
               mode tcp
               option tcp-check
-              #_BACKEND_WORKERS_
+%{ for ip in backend_workers ~}
+              server worker-${ip} ${ip}:30443 check
+%{ endfor ~}
       EOF
 
       systemctl restart haproxy
@@ -81,7 +85,7 @@ apt:
   preserve_sources_list: false
   primary:
     - arches: [default]
-      uri: _UBUNTU_MIRROR_
+      uri: ${ubuntu_mirror}
   security:
     - arches: [default]
       uri: http://security.ubuntu.com/ubuntu
