@@ -52,32 +52,32 @@ resource "null_resource" "ssh_keys_cleanup" {
 
 resource "local_file" "kubeadm-master" {
   filename = "/tmp/kubeadm-master.yml"
-  content  = templatefile("${path.module}/cloud-init/kubeadm-master.tftpl",
-                          {
-                            lb_ip         = data.terraform_remote_state.dns.outputs.lb_ip
-                            ubuntu_mirror = var.ubuntu_mirror
-                          }
-                         )
+  content = templatefile("${path.module}/cloud-init/kubeadm-master.tftpl",
+    {
+      lb_ip         = data.terraform_remote_state.dns.outputs.lb_ip
+      ubuntu_mirror = var.ubuntu_mirror
+    }
+  )
 }
 
 resource "local_file" "kubeadm-worker" {
   filename = "/tmp/kubeadm-worker.yml"
-  content  = templatefile("${path.module}/cloud-init/kubeadm-worker.tftpl",
-                          {
-                            ubuntu_mirror = var.ubuntu_mirror
-                          }
-                         )
+  content = templatefile("${path.module}/cloud-init/kubeadm-worker.tftpl",
+    {
+      ubuntu_mirror = var.ubuntu_mirror
+    }
+  )
 }
 
 resource "local_file" "loadbalancer" {
   filename = "/tmp/loadbalancer.yml"
-  content  = templatefile("${path.module}/cloud-init/loadbalancer.tftpl",
-                          {
-                            backend_apiservers = [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip]
-                            backend_workers    = [for k8s_worker in var.k8s_workers : k8s_worker.ip]
-                            ubuntu_mirror      = var.ubuntu_mirror
-                          }
-                         )
+  content = templatefile("${path.module}/cloud-init/loadbalancer.tftpl",
+    {
+      backend_apiservers = [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip]
+      backend_workers    = [for k8s_worker in var.k8s_workers : k8s_worker.ip]
+      ubuntu_mirror      = var.ubuntu_mirror
+    }
+  )
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
@@ -93,7 +93,7 @@ resource "null_resource" "deploy-cloud-init-scripts" {
     EOF
   }
 
-  depends_on = [local_file.kubeadm-master, local_file.kubeadm-worker, local_file.loadbalancer] 
+  depends_on = [local_file.kubeadm-master, local_file.kubeadm-worker, local_file.loadbalancer]
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
