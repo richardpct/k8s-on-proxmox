@@ -69,28 +69,15 @@ resource "local_file" "kubeadm-worker" {
                          )
 }
 
-resource "null_resource" "prepare-cloud-init-scripts" {
-  provisioner "local-exec" {
-    command = <<EOF
-      set -x
-
-      cp ${path.module}/cloud-init/loadbalancer.yml /tmp/loadbalancer.yml
-
-      for i in ${local.k8s_control_planes_list}; do
-        sed -i '' "/_BACKEND_APISERVERS_/a\\
-              server control-plane-$${i: -1} $i:6443 check
-        " /tmp/loadbalancer.yml
-      done
-
-      for i in ${local.k8s_workers_list}; do
-        sed -i '' "/_BACKEND_WORKERS_/a\\
-              server k8s-worker-$${i: -1} $i:30443 check
-        " /tmp/loadbalancer.yml
-      done
-
-      sed -i -e 's;_UBUNTU_MIRROR_;${var.ubuntu_mirror};' /tmp/loadbalancer.yml
-    EOF
-  }
+resource "local_file" "loadbalancer" {
+  filename = "/tmp/loadbalancer.yml"
+  content  = templatefile("${path.module}/cloud-init/loadbalancer.tftpl",
+                          {
+                            backend_apiservers = [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip]
+                            backend_workers    = [for k8s_worker in var.k8s_workers : k8s_worker.ip]
+                            ubuntu_mirror      = var.ubuntu_mirror
+                          }
+                         )
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
@@ -106,7 +93,7 @@ resource "null_resource" "deploy-cloud-init-scripts" {
     EOF
   }
 
-  depends_on = [null_resource.prepare-cloud-init-scripts]
+  depends_on = [local_file.kubeadm-master, local_file.kubeadm-worker, local_file.loadbalancer] 
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
