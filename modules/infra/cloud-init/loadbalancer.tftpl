@@ -66,16 +66,16 @@ write_files:
               balance roundrobin
               mode tcp
               option tcp-check
-%{ for ip in backend_apiservers ~}
-              server control-plane-${ip} ${ip}:${k8s_api_port} check
+%{ for server in backend_apiservers ~}
+              server ${server.name} ${server.ip}:${k8s_api_port} check
 %{ endfor ~}
 
       backend kube-ingress-worker
               balance roundrobin
               mode tcp
               option tcp-check
-%{ for ip in backend_workers ~}
-              server worker-${ip} ${ip}:${k8s_ingress_port} check
+%{ for server in backend_workers ~}
+              server ${server.name} ${server.ip}:${k8s_ingress_port} check
 %{ endfor ~}
       EOF
 
