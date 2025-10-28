@@ -73,23 +73,25 @@ resource "local_file" "loadbalancer" {
   filename = "/tmp/loadbalancer.yml"
   content = templatefile("${path.module}/cloud-init/loadbalancer.tftpl",
     {
-      backend_apiservers = [for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.ip]
-      backend_workers    = [for k8s_worker in var.k8s_workers : k8s_worker.ip]
+      backend_apiservers = var.k8s_control_planes
+      backend_workers    = var.k8s_workers
+      k8s_api_port       = local.k8s_api_port
+      k8s_ingress_port   = local.k8s_ingress_port
       ubuntu_mirror      = var.ubuntu_mirror
     }
   )
 }
 
 resource "null_resource" "deploy-cloud-init-scripts" {
+  for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
+
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      for pve_node in ${local.pve_nodes_list}; do
-        scp /tmp/kubeadm-master.yml root@$${pve_node}:/var/lib/vz/snippets/
-        scp /tmp/kubeadm-worker.yml root@$${pve_node}:/var/lib/vz/snippets/
-        scp /tmp/loadbalancer.yml root@$${pve_node}:/var/lib/vz/snippets/
-      done
+      scp /tmp/kubeadm-master.yml root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/kubeadm-worker.yml root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/loadbalancer.yml   root@${each.value.ip}:/var/lib/vz/snippets/
     EOF
   }
 

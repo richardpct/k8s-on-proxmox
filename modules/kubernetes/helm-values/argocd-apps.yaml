@@ -1,5 +1,5 @@
 applications:
-  guestbook:
+  test:
     namespace: argocd
     additionalLabels: {}
     additionalAnnotations: {}

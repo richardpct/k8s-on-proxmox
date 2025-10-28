@@ -1,7 +1,7 @@
 #cloud-config
 package_update: true
 write_files:
-  - path: /tmp/lb.sh
+  - path: /tmp/configure-loadbalancer.sh
     content: |
       #!/usr/bin/env bash
 
@@ -66,16 +66,16 @@ write_files:
               balance roundrobin
               mode tcp
               option tcp-check
-%{ for ip in backend_apiservers ~}
-              server control-plane-${ip} ${ip}:6443 check
+%{ for server in backend_apiservers ~}
+              server ${server.name} ${server.ip}:${k8s_api_port} check
 %{ endfor ~}
 
       backend kube-ingress-worker
               balance roundrobin
               mode tcp
               option tcp-check
-%{ for ip in backend_workers ~}
-              server worker-${ip} ${ip}:30443 check
+%{ for server in backend_workers ~}
+              server ${server.name} ${server.ip}:${k8s_ingress_port} check
 %{ endfor ~}
       EOF
 
@@ -90,4 +90,4 @@ apt:
     - arches: [default]
       uri: http://security.ubuntu.com/ubuntu
 runcmd:
- - [sh, "/tmp/lb.sh"]
+ - [sh, "/tmp/configure-loadbalancer.sh"]
