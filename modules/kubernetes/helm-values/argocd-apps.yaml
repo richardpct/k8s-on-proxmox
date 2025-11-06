@@ -146,6 +146,7 @@ applications:
         selfHeal: false
       syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
     revisionHistoryLimit: null
 #  minio-operator:
 #    namespace: argocd
