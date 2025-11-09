@@ -1,27 +1,4 @@
 applications:
-  test:
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
-      path: test
-      plugin:
-        name: avp
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: test
-    syncPolicy:
-      automated:
-        prune: false
-        selfHeal: false
-      syncOptions:
-      - CreateNamespace=true
-    revisionHistoryLimit: null
   ceph-csi:
     namespace: argocd
     additionalLabels: {}
@@ -31,13 +8,11 @@ applications:
     project: default
     source:
       repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
+      targetRevision: add-eso
       path: ceph-csi
-      plugin:
-        name: avp-helm
-#      helm:
-#        valueFiles:
-#        - values.yaml
+      helm:
+        valueFiles:
+        - values.yaml
     destination:
       server: https://kubernetes.default.svc
       namespace: ceph-csi
@@ -75,30 +50,6 @@ applications:
     info:
     - name: url
       value: https://github.com/kubernetes-sigs/metrics-server
-#  vault:
-#    namespace: argocd
-#    additionalLabels: {}
-#    additionalAnnotations: {}
-#    finalizers:
-#    - resources-finalizer.argocd.argoproj.io
-#    project: default
-#    source:
-#      repoURL: https://github.com/richardpct/argocd-apps.git
-#      targetRevision: HEAD
-#      path: vault
-#      helm:
-#        valueFiles:
-#        - values.yaml
-#    destination:
-#      server: https://kubernetes.default.svc
-#      namespace: vault
-#    syncPolicy:
-#      automated:
-#        prune: false
-#        selfHeal: false
-#      syncOptions:
-#      - CreateNamespace=true
-#    revisionHistoryLimit: null
   jenkins:
     namespace: argocd
     additionalLabels: {}
@@ -123,79 +74,6 @@ applications:
       syncOptions:
       - CreateNamespace=true
     revisionHistoryLimit: null
-  external-secrets:
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: add-eso
-      path: external-secrets
-      helm:
-        valueFiles:
-        - values.yaml
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: external-secrets
-    syncPolicy:
-      automated:
-        prune: false
-        selfHeal: false
-      syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
-    revisionHistoryLimit: null
-#  minio-operator:
-#    namespace: argocd
-#    additionalLabels: {}
-#    additionalAnnotations: {}
-#    finalizers:
-#    - resources-finalizer.argocd.argoproj.io
-#    project: default
-#    source:
-#      repoURL: https://github.com/richardpct/argocd-apps.git
-#      targetRevision: HEAD
-#      path: minio-operator
-#      helm:
-#        valueFiles:
-#        - values.yaml
-#    destination:
-#      server: https://kubernetes.default.svc
-#      namespace: minio-operator
-#    syncPolicy:
-#      automated:
-#        prune: false
-#        selfHeal: false
-#      syncOptions:
-#      - CreateNamespace=true
-#    revisionHistoryLimit: null
-#  minio-tenant:
-#    namespace: argocd
-#    additionalLabels: {}
-#    additionalAnnotations: {}
-#    finalizers:
-#    - resources-finalizer.argocd.argoproj.io
-#    project: default
-#    source:
-#      repoURL: https://github.com/richardpct/argocd-apps.git
-#      targetRevision: HEAD
-#      path: minio-tenant
-#      helm:
-#        valueFiles:
-#        - values.yaml
-#    destination:
-#      server: https://kubernetes.default.svc
-#      namespace: minio-tenant
-#    syncPolicy:
-#      automated:
-#        prune: false
-#        selfHeal: false
-#      syncOptions:
-#      - CreateNamespace=true
-#    revisionHistoryLimit: null
 #  velero:
 #    namespace: argocd
 #    additionalLabels: {}
