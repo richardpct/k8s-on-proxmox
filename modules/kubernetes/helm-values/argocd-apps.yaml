@@ -8,7 +8,7 @@ applications:
     project: default
     source:
       repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: add-eso
+      targetRevision: HEAD
       path: ceph-csi
       helm:
         valueFiles:
