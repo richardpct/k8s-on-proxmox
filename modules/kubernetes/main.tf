@@ -108,18 +108,6 @@ resource "null_resource" "wait-vault-up" {
   depends_on = [helm_release.vault]
 }
 
-resource "vault_generic_secret" "ceph-cluster-id" {
-  path = "secret/ceph"
-
-  data_json = <<EOT
-{
-  "clusterid": "${var.ceph_cluster_id}"
-}
-EOT
-
-  depends_on = [null_resource.wait-vault-up]
-}
-
 resource "kubernetes_namespace" "ceph-csi" {
   metadata {
     name = "ceph-csi"
