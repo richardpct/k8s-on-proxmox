@@ -8,4 +8,5 @@ module "kubernetes" {
   my_domain       = var.my_domain
   vault_token     = var.vault_token
   ceph_cluster_id = var.ceph_cluster_id
+  gitlab_password = var.gitlab_password
 }
