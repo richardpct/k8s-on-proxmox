@@ -74,6 +74,30 @@ applications:
       syncOptions:
       - CreateNamespace=true
     revisionHistoryLimit: null
+  gitlab:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: gitlab
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: gitlab
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
 #  velero:
 #    namespace: argocd
 #    additionalLabels: {}

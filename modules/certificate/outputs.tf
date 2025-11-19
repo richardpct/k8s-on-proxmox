@@ -5,6 +5,6 @@ output "wildcard_private_key" {
 }
 
 output "wildcard_certificate" {
-  value       = acme_certificate.wildcard.certificate_pem
+  value       = "${acme_certificate.wildcard.certificate_pem}${acme_certificate.wildcard.issuer_pem}"
   description = "wildcard certificate"
 }

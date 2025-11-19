@@ -28,6 +28,45 @@ resource "null_resource" "wait_kubernetes_ready" {
   }
 }
 
+resource "kubernetes_namespace" "gitlab" {
+  metadata {
+    name = "gitlab"
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubernetes_secret" "gitlab-tls-cert" {
+  metadata {
+    name      = "gitlab-tls-cert"
+    namespace = "gitlab"
+  }
+
+  type = "kubernetes.io/tls"
+
+  data = {
+    "tls.crt" = data.terraform_remote_state.certificate.outputs.wildcard_certificate
+    "tls.key" = data.terraform_remote_state.certificate.outputs.wildcard_private_key
+  }
+
+  depends_on = [kubernetes_namespace.gitlab]
+}
+
+resource "kubernetes_secret" "gitlab-root-password" {
+  metadata {
+    name      = "gitlab-root-password"
+    namespace = "gitlab"
+  }
+
+  type = "Opaque"
+
+  data = {
+    "password" = var.gitlab_password
+  }
+
+  depends_on = [kubernetes_namespace.gitlab]
+}
+
 resource "kubernetes_secret" "default-tls-cert" {
   metadata {
     name      = "default-tls-cert"
