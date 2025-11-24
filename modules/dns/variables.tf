@@ -15,7 +15,7 @@ variable "my_domain" {
 
 variable "applications" {
   type    = list(string)
-  default = ["vault", "argocd", "jenkins", "gitlab"]
+  default = ["vault", "argocd", "jenkins", "gitlab", "prometheus", "grafana"]
 }
 
 variable "lb_ip" {

@@ -98,6 +98,31 @@ applications:
       syncOptions:
       - CreateNamespace=true
     revisionHistoryLimit: null
+  kube-prometheus-stack:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: monitoring
+      path: kube-prometheus-stack
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: kube-prometheus-stack
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
 #  velero:
 #    namespace: argocd
 #    additionalLabels: {}
