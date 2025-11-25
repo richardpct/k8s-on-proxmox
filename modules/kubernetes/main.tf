@@ -171,9 +171,9 @@ resource "kubernetes_secret" "csi-cephfs-secret" {
   depends_on = [kubernetes_namespace.ceph-csi]
 }
 
-resource "kubernetes_namespace" "kube-prometheus-stack" {
+resource "kubernetes_namespace" "monitoring" {
   metadata {
-    name = "kube-prometheus-stack"
+    name = "monitoring"
   }
 
   depends_on = [null_resource.wait_kubernetes_ready]
@@ -182,7 +182,7 @@ resource "kubernetes_namespace" "kube-prometheus-stack" {
 resource "kubernetes_secret" "grafana-admin-password" {
   metadata {
     name      = "grafana-admin-password"
-    namespace = "kube-prometheus-stack"
+    namespace = "monitoring"
   }
 
   type = "Opaque"
@@ -192,7 +192,7 @@ resource "kubernetes_secret" "grafana-admin-password" {
     "admin-password" = var.grafana_password
   }
 
-  depends_on = [kubernetes_namespace.kube-prometheus-stack]
+  depends_on = [kubernetes_namespace.monitoring]
 }
 
 resource "kubernetes_cluster_role" "ceph-csi-cephfs-provisioner-custom" {

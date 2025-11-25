@@ -12,7 +12,7 @@ write_files:
 
       apt-get update
       #apt-get upgrade -y
-      apt-get install -y haproxy
+      apt-get install -y haproxy prometheus-node-exporter
 
       cat <<EOF | tee /etc/haproxy/haproxy.cfg
       global

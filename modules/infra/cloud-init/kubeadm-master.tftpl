@@ -69,11 +69,30 @@ write_files:
 
       # CREATE CLUSTER, only the first control plane performs kubeadm init
       if hostname | grep '\-01$'; then
+        # use custom config for exposing the service to prometheus
+        cat <<EOF | tee /tmp/kubeadm-config
+        apiVersion: kubeadm.k8s.io/v1beta4
+        kind: ClusterConfiguration
+        controlPlaneEndpoint: "${lb_ip}:6443"
+        controllerManager:
+          extraArgs:
+            - name: bind-address
+              value: "0.0.0.0"
+        scheduler:
+          extraArgs:
+            - name: bind-address
+              value: "0.0.0.0"
+        etcd:
+          local:
+            extraArgs:
+              - name: listen-metrics-urls
+                value: "http://0.0.0.0:2381"
+      EOF
+
         kubeadm init \
-          --control-plane-endpoint "${lb_ip}:6443" \
           --skip-phases=addon/kube-proxy \
-          --apiserver-cert-extra-sans=${lb_ip} \
-          --upload-certs
+          --upload-certs \
+          --config /tmp/kubeadm-config
       fi
 
       echo 'DONE'
