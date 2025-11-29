@@ -50,6 +50,12 @@ write_files:
               errorfile 503 /etc/haproxy/errors/503.http
               errorfile 504 /etc/haproxy/errors/504.http
 
+      frontend prometheus
+              bind *:8405
+              mode http
+              http-request use-service prometheus-exporter if { path /metrics }
+              no log
+
       frontend kube-apiserver
               bind *:6443
               mode tcp
