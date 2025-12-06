@@ -50,30 +50,30 @@ applications:
     info:
     - name: url
       value: https://github.com/kubernetes-sigs/metrics-server
-  jenkins:
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
-      path: jenkins
-      helm:
-        valueFiles:
-        - values.yaml
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: jenkins
-    syncPolicy:
-      automated:
-        prune: false
-        selfHeal: false
-      syncOptions:
-      - CreateNamespace=true
-    revisionHistoryLimit: null
+#  jenkins:
+#    namespace: argocd
+#    additionalLabels: {}
+#    additionalAnnotations: {}
+#    finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+#    project: default
+#    source:
+#      repoURL: https://github.com/richardpct/argocd-apps.git
+#      targetRevision: HEAD
+#      path: jenkins
+#      helm:
+#        valueFiles:
+#        - values.yaml
+#    destination:
+#      server: https://kubernetes.default.svc
+#      namespace: jenkins
+#    syncPolicy:
+#      automated:
+#        prune: false
+#        selfHeal: false
+#      syncOptions:
+#      - CreateNamespace=true
+#    revisionHistoryLimit: null
   gitlab:
     namespace: argocd
     additionalLabels: {}
