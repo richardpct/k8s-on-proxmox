@@ -107,7 +107,7 @@ applications:
     project: default
     source:
       repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: monitoring
+      targetRevision: HEAD
       path: kube-prometheus-stack
       helm:
         valueFiles:
