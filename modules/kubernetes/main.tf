@@ -171,6 +171,30 @@ resource "kubernetes_secret" "csi-cephfs-secret" {
   depends_on = [kubernetes_namespace.ceph-csi]
 }
 
+resource "kubernetes_namespace" "monitoring" {
+  metadata {
+    name = "monitoring"
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubernetes_secret" "grafana-admin-password" {
+  metadata {
+    name      = "grafana-admin-password"
+    namespace = "monitoring"
+  }
+
+  type = "Opaque"
+
+  data = {
+    "admin-user"     = "admin"
+    "admin-password" = var.grafana_password
+  }
+
+  depends_on = [kubernetes_namespace.monitoring]
+}
+
 resource "kubernetes_cluster_role" "ceph-csi-cephfs-provisioner-custom" {
   metadata {
     name = "ceph-csi-cephfs-provisioner-custom"

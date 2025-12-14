@@ -37,3 +37,8 @@ variable "gitlab_password" {
   type        = string
   description = "gitlab password"
 }
+
+variable "grafana_password" {
+  type        = string
+  description = "grafana password"
+}
