@@ -251,7 +251,11 @@ resource "helm_release" "argocd-apps" {
   force_update     = true
 
   values = [
-    "${file("${path.module}/helm-values/argocd-apps.yaml")}"
+    templatefile("${path.module}/helm-values/argocd-apps.tftpl",
+      {
+        ceph_cluster_id = var.ceph_cluster_id
+      }
+    )
   ]
 
   depends_on = [helm_release.argo-cd]
