@@ -13,6 +13,11 @@ applications:
       helm:
         valueFiles:
         - values.yaml
+        parameters:
+          - name: ceph-csi-cephfs.csiConfig[0].clusterID
+            value: ${ceph_cluster_id}
+          - name: ceph-csi-cephfs.storageClass.clusterID
+            value: ${ceph_cluster_id}
     destination:
       server: https://kubernetes.default.svc
       namespace: ceph-csi

@@ -26,6 +26,7 @@ resource "null_resource" "update-images" {
           qm create ${each.value.cloudinit_img_id} --name ubuntu-${var.ubuntu_version}-cloudinit
           qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
           qm template ${each.value.cloudinit_img_id}
+          while ! qm list | grep ubuntu-${var.ubuntu_version}-cloudinit; do sleep 2; done
         fi
 IMG
     EOF

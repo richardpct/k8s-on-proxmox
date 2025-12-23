@@ -1,5 +1,6 @@
 .DEFAULT_GOAL  := help
 TERRAFORM_LOCK := .terraform.lock.hcl
+SECRET_ENV     := ~/terraform/k8s-on-proxmox/tofu_vars_secrets
 
 .PHONY: help
 help: ## Show help
@@ -10,17 +11,20 @@ help: ## Show help
 	| grep -v awk
 
 $(TERRAFORM_LOCK):
+	. $(SECRET_ENV) && \
 	tofu init \
-		-backend-config="bucket=${TF_VAR_bucket}" \
-		-backend-config="key=${TF_VAR_key_kubernetes}" \
-		-backend-config="region=${TF_VAR_region}"
+		-backend-config="bucket=$$TF_VAR_bucket" \
+		-backend-config="key=$$TF_VAR_key_kubernetes" \
+		-backend-config="region=$$TF_VAR_region"
 
 .PHONY: init
 init: $(TERRAFORM_LOCK) ## Init
 
 .PHONY: apply
 apply: init ## Create the infrastructure
-	gtime make apply -C ../04-infra && gtime tofu apply -auto-approve
+	. $(SECRET_ENV) && \
+	gtime make apply -C ../04-infra && \
+	gtime tofu apply -auto-approve
 
 .PHONY: plan
 plan: init ## Dry run
@@ -29,6 +33,7 @@ plan: init ## Dry run
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
 	tofu state ls | while read; do tofu state rm $$REPLY; done
+	. $(SECRET_ENV) && \
 	tofu destroy -auto-approve && make destroy -C ../04-infra
 
 .PHONY: clean
