@@ -105,10 +105,10 @@ resource "helm_release" "cilium" {
 
 resource "kubectl_manifest" "gateway" {
   yaml_body = templatefile("${path.module}/manifests/gateway.yaml.tftpl",
-                            {
-                              gateway_nodeport = "30443"
-                            }
-                          )
+    {
+      gateway_nodeport = "30443"
+    }
+  )
 
   depends_on = [helm_release.cilium]
 }
@@ -130,11 +130,11 @@ resource "helm_release" "vault" {
 
 resource "kubectl_manifest" "httproute-vault" {
   yaml_body = templatefile("${path.module}/manifests/httproute-vault.yaml.tftpl",
-                            {
-                              application = "vault"
-                              domain      = var.my_domain
-                            }
-                          )
+    {
+      application = "vault"
+      domain      = var.my_domain
+    }
+  )
 
   depends_on = [helm_release.vault]
 }
@@ -281,11 +281,11 @@ resource "null_resource" "wait_svc-gitlab-webservice-default_ready" {
 
 resource "kubectl_manifest" "httproute-gitlab" {
   yaml_body = templatefile("${path.module}/manifests/httproute-gitlab.yaml.tftpl",
-                            {
-                              application = "gitlab"
-                              domain      = var.my_domain
-                            }
-                          )
+    {
+      application = "gitlab"
+      domain      = var.my_domain
+    }
+  )
 
   depends_on = [null_resource.wait_svc-gitlab-webservice-default_ready]
 }
