@@ -1,5 +1,13 @@
 locals {
-  kube_config = "~/.kube/config"
+  kube_config         = "~/.kube/config"
+  gateway_api_version = "v1.2.0"
+  gateway_crds        = [
+    "gatewayclasses",
+    "gateways",
+    "httproutes",
+    "referencegrants",
+    "grpcroutes"
+  ]
 }
 
 variable "region" {
