@@ -256,7 +256,7 @@ resource "helm_release" "argocd-apps" {
   force_update     = true
 
   values = [
-    templatefile("${path.module}/helm-values/argocd-apps.tftpl",
+    templatefile("${path.module}/helm-values/argocd-apps.yaml.tftpl",
       {
         ceph_cluster_id = var.ceph_cluster_id
       }
