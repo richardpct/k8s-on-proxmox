@@ -36,22 +36,6 @@ resource "kubernetes_namespace" "gitlab" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "kubernetes_secret" "gitlab-tls-cert" {
-  metadata {
-    name      = "gitlab-tls-cert"
-    namespace = "gitlab"
-  }
-
-  type = "kubernetes.io/tls"
-
-  data = {
-    "tls.crt" = data.terraform_remote_state.certificate.outputs.wildcard_certificate
-    "tls.key" = data.terraform_remote_state.certificate.outputs.wildcard_private_key
-  }
-
-  depends_on = [kubernetes_namespace.gitlab]
-}
-
 resource "kubernetes_secret" "gitlab-root-password" {
   metadata {
     name      = "gitlab-root-password"
@@ -67,6 +51,7 @@ resource "kubernetes_secret" "gitlab-root-password" {
   depends_on = [kubernetes_namespace.gitlab]
 }
 
+
 resource "kubernetes_secret" "default-tls-cert" {
   metadata {
     name      = "default-tls-cert"
@@ -81,6 +66,20 @@ resource "kubernetes_secret" "default-tls-cert" {
   }
 
   depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "null_resource" "install-gateway-crds" {
+  provisioner "local-exec" {
+    command = <<EOF
+      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_gatewayclasses.yaml
+      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_gateways.yaml
+      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
+      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_referencegrants.yaml
+      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_grpcroutes.yaml
+    EOF
+  }
+
+  depends_on = [kubernetes_secret.default-tls-cert]
 }
 
 resource "helm_release" "cilium" {
@@ -101,7 +100,17 @@ resource "helm_release" "cilium" {
     }
   ]
 
-  depends_on = [kubernetes_secret.default-tls-cert]
+  depends_on = [null_resource.install-gateway-crds]
+}
+
+resource "kubectl_manifest" "gateway" {
+  yaml_body = templatefile("${path.module}/manifests/gateway.yaml.tftpl",
+                            {
+                              gateway_nodeport = "30443"
+                            }
+                          )
+
+  depends_on = [helm_release.cilium]
 }
 
 resource "helm_release" "vault" {
@@ -116,22 +125,18 @@ resource "helm_release" "vault" {
     "${file("${path.module}/helm-values/vault.yaml")}"
   ]
 
-  set = [
-    {
-      name  = "server.ingress.hosts[0].host"
-      value = "vault.${var.my_domain}"
-    },
-    {
-      name  = "server.ingress.hosts[0].paths[0]"
-      value = "/"
-    },
-    {
-      name  = "server.ingress.tls[0].hosts[0]"
-      value = "vault.${var.my_domain}"
-    }
-  ]
-
   depends_on = [helm_release.cilium]
+}
+
+resource "kubectl_manifest" "httproute-vault" {
+  yaml_body = templatefile("${path.module}/manifests/httproute-vault.yaml.tftpl",
+                            {
+                              application = "vault"
+                              domain      = var.my_domain
+                            }
+                          )
+
+  depends_on = [helm_release.vault]
 }
 
 resource "null_resource" "wait-vault-up" {
@@ -144,7 +149,7 @@ resource "null_resource" "wait-vault-up" {
     EOF
   }
 
-  depends_on = [helm_release.vault]
+  depends_on = [kubectl_manifest.httproute-vault]
 }
 
 resource "kubernetes_namespace" "ceph-csi" {
@@ -259,4 +264,28 @@ resource "helm_release" "argocd-apps" {
   ]
 
   depends_on = [helm_release.argo-cd]
+}
+
+resource "null_resource" "wait_svc-gitlab-webservice-default_ready" {
+  provisioner "local-exec" {
+    command = <<EOF
+      while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
+        echo 'waiting for gitlab-webservice-default service...'
+        sleep 2
+      done
+    EOF
+  }
+
+  depends_on = [helm_release.argocd-apps]
+}
+
+resource "kubectl_manifest" "httproute-gitlab" {
+  yaml_body = templatefile("${path.module}/manifests/httproute-gitlab.yaml.tftpl",
+                            {
+                              application = "gitlab"
+                              domain      = var.my_domain
+                            }
+                          )
+
+  depends_on = [null_resource.wait_svc-gitlab-webservice-default_ready]
 }

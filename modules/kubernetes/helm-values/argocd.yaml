@@ -37,13 +37,17 @@ repoServer:
 server:
   replicas: 3
   ingress:
+    enabled: false
+  httproute:
     enabled: true
-    ingressClassName: "cilium"
-    hostname: argocd.unixworld.io
-    pathType: Prefix
-    path: /
-    tls: true
-    extraTls:
-      - secretName: ""
-        hosts:
-          - argocd.unixworld.io
+    parentRefs:
+      - name: tls-gateway
+        namespace: kube-system
+        sectionName: https
+    hostnames:
+      - argocd.unixworld.io
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /

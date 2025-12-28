@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-${application}
+  namespace: ${application}
+spec:
+  parentRefs:
+  - name: tls-gateway
+    namespace: kube-system
+  hostnames:
+  - "${application}.${domain}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: gitlab-webservice-default
+      port: 8181

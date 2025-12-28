@@ -4,6 +4,10 @@ terraform {
       source  = "opentofu/kubernetes"
       version = "2.38.0"
     }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = ">= 1.19.0"
+    }
     helm = {
       source  = "opentofu/helm"
       version = "3.0.2"
@@ -16,6 +20,10 @@ terraform {
 }
 
 provider "kubernetes" {
+  config_path = local.kube_config
+}
+
+provider "kubectl" {
   config_path = local.kube_config
 }
 
