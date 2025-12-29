@@ -1,5 +1,6 @@
 .DEFAULT_GOAL  := help
 TERRAFORM_LOCK := .terraform.lock.hcl
+SECRET_ENV     := ~/terraform/k8s-on-proxmox/tofu_vars_secrets
 
 .PHONY: help
 help: ## Show help
@@ -10,24 +11,28 @@ help: ## Show help
 	| grep -v awk
 
 $(TERRAFORM_LOCK):
+	. $(SECRET_ENV) && \
 	tofu init \
-		-backend-config="bucket=${TF_VAR_bucket}" \
-		-backend-config="key=${TF_VAR_key_dns}" \
-		-backend-config="region=${TF_VAR_region}"
+		-backend-config="bucket=$$TF_VAR_bucket" \
+		-backend-config="key=$$TF_VAR_key_dns" \
+		-backend-config="region=$$TF_VAR_region"
 
 .PHONY: init
 init: $(TERRAFORM_LOCK) ## Init
 
 .PHONY: apply
 apply: init ## Create the infrastructure
+	. $(SECRET_ENV) && \
 	tofu apply
 
 .PHONY: plan
 plan: init ## Dry run
+	. $(SECRET_ENV) && \
 	tofu plan
 
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
+	. $(SECRET_ENV) && \
 	tofu destroy
 
 .PHONY: clean
