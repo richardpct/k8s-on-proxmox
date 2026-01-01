@@ -28,30 +28,6 @@ resource "null_resource" "wait_kubernetes_ready" {
   }
 }
 
-resource "kubernetes_namespace_v1" "gitlab" {
-  metadata {
-    name = "gitlab"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
-resource "kubernetes_secret_v1" "gitlab_root_password" {
-  metadata {
-    name      = "gitlab-root-password"
-    namespace = "gitlab"
-  }
-
-  type = "Opaque"
-
-  data = {
-    "password" = var.gitlab_password
-  }
-
-  depends_on = [kubernetes_namespace_v1.gitlab]
-}
-
-
 resource "kubernetes_secret_v1" "default_tls_cert" {
   metadata {
     name      = "default-tls-cert"
@@ -264,6 +240,29 @@ resource "helm_release" "argocd_apps" {
   ]
 
   depends_on = [helm_release.argo_cd]
+}
+
+resource "kubernetes_namespace_v1" "gitlab" {
+  metadata {
+    name = "gitlab"
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubernetes_secret_v1" "gitlab_root_password" {
+  metadata {
+    name      = "gitlab-root-password"
+    namespace = "gitlab"
+  }
+
+  type = "Opaque"
+
+  data = {
+    "password" = var.gitlab_password
+  }
+
+  depends_on = [kubernetes_namespace_v1.gitlab]
 }
 
 resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
