@@ -28,7 +28,7 @@ resource "null_resource" "wait_kubernetes_ready" {
   }
 }
 
-resource "kubernetes_namespace" "gitlab" {
+resource "kubernetes_namespace_v1" "gitlab" {
   metadata {
     name = "gitlab"
   }
@@ -36,7 +36,7 @@ resource "kubernetes_namespace" "gitlab" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "kubernetes_secret" "gitlab-root-password" {
+resource "kubernetes_secret_v1" "gitlab_root_password" {
   metadata {
     name      = "gitlab-root-password"
     namespace = "gitlab"
@@ -48,11 +48,11 @@ resource "kubernetes_secret" "gitlab-root-password" {
     "password" = var.gitlab_password
   }
 
-  depends_on = [kubernetes_namespace.gitlab]
+  depends_on = [kubernetes_namespace_v1.gitlab]
 }
 
 
-resource "kubernetes_secret" "default-tls-cert" {
+resource "kubernetes_secret_v1" "default_tls_cert" {
   metadata {
     name      = "default-tls-cert"
     namespace = "kube-system"
@@ -79,7 +79,7 @@ resource "null_resource" "install-gateway-crds" {
     EOF
   }
 
-  depends_on = [kubernetes_secret.default-tls-cert]
+  depends_on = [kubernetes_secret_v1.default_tls_cert]
 }
 
 resource "helm_release" "cilium" {
@@ -128,7 +128,7 @@ resource "helm_release" "vault" {
   depends_on = [helm_release.cilium]
 }
 
-resource "kubectl_manifest" "httproute-vault" {
+resource "kubectl_manifest" "httproute_vault" {
   yaml_body = templatefile("${path.module}/manifests/httproute-vault.yaml.tftpl",
     {
       application = "vault"
@@ -139,7 +139,7 @@ resource "kubectl_manifest" "httproute-vault" {
   depends_on = [helm_release.vault]
 }
 
-resource "null_resource" "wait-vault-up" {
+resource "null_resource" "wait_vault_up" {
   provisioner "local-exec" {
     command = <<EOF
       while [ "$(curl -s --connect-timeout 2 https://vault.${var.my_domain}/v1/sys/health | jq .initialized)" != 'true' ]
@@ -149,10 +149,10 @@ resource "null_resource" "wait-vault-up" {
     EOF
   }
 
-  depends_on = [kubectl_manifest.httproute-vault]
+  depends_on = [kubectl_manifest.httproute_vault]
 }
 
-resource "kubernetes_namespace" "ceph-csi" {
+resource "kubernetes_namespace_v1" "ceph_csi" {
   metadata {
     name = "ceph-csi"
   }
@@ -160,7 +160,7 @@ resource "kubernetes_namespace" "ceph-csi" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "kubernetes_secret" "csi-cephfs-secret" {
+resource "kubernetes_secret_v1" "csi_cephfs_secret" {
   metadata {
     name      = "csi-cephfs-secret"
     namespace = "ceph-csi"
@@ -173,10 +173,10 @@ resource "kubernetes_secret" "csi-cephfs-secret" {
     "userKey" = var.cephfs_secret
   }
 
-  depends_on = [kubernetes_namespace.ceph-csi]
+  depends_on = [kubernetes_namespace_v1.ceph_csi]
 }
 
-resource "kubernetes_namespace" "monitoring" {
+resource "kubernetes_namespace_v1" "monitoring" {
   metadata {
     name = "monitoring"
   }
@@ -184,7 +184,7 @@ resource "kubernetes_namespace" "monitoring" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "kubernetes_secret" "grafana-admin-password" {
+resource "kubernetes_secret_v1" "grafana_admin_password" {
   metadata {
     name      = "grafana-admin-password"
     namespace = "monitoring"
@@ -197,10 +197,10 @@ resource "kubernetes_secret" "grafana-admin-password" {
     "admin-password" = var.grafana_password
   }
 
-  depends_on = [kubernetes_namespace.monitoring]
+  depends_on = [kubernetes_namespace_v1.monitoring]
 }
 
-resource "kubernetes_cluster_role" "ceph-csi-cephfs-provisioner-custom" {
+resource "kubernetes_cluster_role_v1" "ceph_csi_cephfs_provisioner_custom" {
   metadata {
     name = "ceph-csi-cephfs-provisioner-custom"
   }
@@ -214,7 +214,7 @@ resource "kubernetes_cluster_role" "ceph-csi-cephfs-provisioner-custom" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "kubernetes_cluster_role_binding" "ceph-csi-cephfs-provisioner-custom" {
+resource "kubernetes_cluster_role_binding_v1" "ceph_csi_cephfs_provisioner_custom" {
   metadata {
     name = "ceph-csi-cephfs-provisioner-custom"
   }
@@ -229,10 +229,10 @@ resource "kubernetes_cluster_role_binding" "ceph-csi-cephfs-provisioner-custom" 
     namespace = "ceph-csi"
   }
 
-  depends_on = [kubernetes_namespace.ceph-csi, kubernetes_cluster_role.ceph-csi-cephfs-provisioner-custom]
+  depends_on = [kubernetes_namespace_v1.ceph_csi, kubernetes_cluster_role_v1.ceph_csi_cephfs_provisioner_custom]
 }
 
-resource "helm_release" "argo-cd" {
+resource "helm_release" "argo_cd" {
   name             = "argo-cd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
@@ -244,10 +244,10 @@ resource "helm_release" "argo-cd" {
     "${file("${path.module}/helm-values/argocd.yaml")}"
   ]
 
-  depends_on = [kubernetes_cluster_role_binding.ceph-csi-cephfs-provisioner-custom]
+  depends_on = [kubernetes_cluster_role_binding_v1.ceph_csi_cephfs_provisioner_custom]
 }
 
-resource "helm_release" "argocd-apps" {
+resource "helm_release" "argocd_apps" {
   name             = "argocd-apps"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argocd-apps"
@@ -263,10 +263,10 @@ resource "helm_release" "argocd-apps" {
     )
   ]
 
-  depends_on = [helm_release.argo-cd]
+  depends_on = [helm_release.argo_cd]
 }
 
-resource "null_resource" "wait_svc-gitlab-webservice-default_ready" {
+resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
   provisioner "local-exec" {
     command = <<EOF
       while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
@@ -276,10 +276,10 @@ resource "null_resource" "wait_svc-gitlab-webservice-default_ready" {
     EOF
   }
 
-  depends_on = [helm_release.argocd-apps]
+  depends_on = [helm_release.argocd_apps]
 }
 
-resource "kubectl_manifest" "httproute-gitlab" {
+resource "kubectl_manifest" "httproute_gitlab" {
   yaml_body = templatefile("${path.module}/manifests/httproute-gitlab.yaml.tftpl",
     {
       application = "gitlab"
@@ -287,5 +287,5 @@ resource "kubectl_manifest" "httproute-gitlab" {
     }
   )
 
-  depends_on = [null_resource.wait_svc-gitlab-webservice-default_ready]
+  depends_on = [null_resource.wait_svc_gitlab_webservice_default_ready]
 }

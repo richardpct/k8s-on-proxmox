@@ -8,7 +8,7 @@ data "terraform_remote_state" "dns" {
   }
 }
 
-resource "null_resource" "update-images" {
+resource "null_resource" "update_images" {
   for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
 
   provisioner "local-exec" {
@@ -51,9 +51,9 @@ resource "null_resource" "ssh_keys_cleanup" {
   }
 }
 
-resource "local_file" "kubeadm-master" {
-  filename = "/tmp/kubeadm-master.yml"
-  content = templatefile("${path.module}/cloud-init/kubeadm-master.tftpl",
+resource "local_file" "kubeadm_master" {
+  filename = "/tmp/kubeadm-master.yaml"
+  content = templatefile("${path.module}/cloud-init/kubeadm-master.yaml.tftpl",
     {
       lb_ip         = data.terraform_remote_state.dns.outputs.lb_ip
       ubuntu_mirror = var.ubuntu_mirror
@@ -61,9 +61,9 @@ resource "local_file" "kubeadm-master" {
   )
 }
 
-resource "local_file" "kubeadm-worker" {
-  filename = "/tmp/kubeadm-worker.yml"
-  content = templatefile("${path.module}/cloud-init/kubeadm-worker.tftpl",
+resource "local_file" "kubeadm_worker" {
+  filename = "/tmp/kubeadm-worker.yaml"
+  content = templatefile("${path.module}/cloud-init/kubeadm-worker.yaml.tftpl",
     {
       ubuntu_mirror = var.ubuntu_mirror
     }
@@ -71,32 +71,32 @@ resource "local_file" "kubeadm-worker" {
 }
 
 resource "local_file" "loadbalancer" {
-  filename = "/tmp/loadbalancer.yml"
-  content = templatefile("${path.module}/cloud-init/loadbalancer.tftpl",
+  filename = "/tmp/loadbalancer.yaml"
+  content = templatefile("${path.module}/cloud-init/loadbalancer.yaml.tftpl",
     {
-      backend_apiservers = var.k8s_control_planes
-      backend_workers    = var.k8s_workers
-      k8s_api_port       = local.k8s_api_port
-      k8s_ingress_port   = local.k8s_ingress_port
-      ubuntu_mirror      = var.ubuntu_mirror
+      backend_apiservers   = var.k8s_control_planes
+      backend_workers      = var.k8s_workers
+      k8s_api_port         = local.k8s_api_port
+      k8s_gateway_nodeport = local.k8s_gateway_nodeport
+      ubuntu_mirror        = var.ubuntu_mirror
     }
   )
 }
 
-resource "null_resource" "deploy-cloud-init-scripts" {
+resource "null_resource" "deploy_cloud_init_scripts" {
   for_each = { for pve_node in var.pve_nodes : pve_node.name => pve_node }
 
   provisioner "local-exec" {
     command = <<EOF
       set -x
 
-      scp /tmp/kubeadm-master.yml root@${each.value.ip}:/var/lib/vz/snippets/
-      scp /tmp/kubeadm-worker.yml root@${each.value.ip}:/var/lib/vz/snippets/
-      scp /tmp/loadbalancer.yml   root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/kubeadm-master.yaml root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/kubeadm-worker.yaml root@${each.value.ip}:/var/lib/vz/snippets/
+      scp /tmp/loadbalancer.yaml   root@${each.value.ip}:/var/lib/vz/snippets/
     EOF
   }
 
-  depends_on = [local_file.kubeadm-master, local_file.kubeadm-worker, local_file.loadbalancer]
+  depends_on = [local_file.kubeadm_master, local_file.kubeadm_worker, local_file.loadbalancer]
 }
 
 resource "proxmox_vm_qemu" "loadbalancer" {
@@ -117,7 +117,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
   automatic_reboot = true
 
   # Cloud-Init configuration
-  cicustom   = "vendor=local:snippets/loadbalancer.yml" # /var/lib/vz/snippets/loadbalancer.yml
+  cicustom   = "vendor=local:snippets/loadbalancer.yaml" # /var/lib/vz/snippets/loadbalancer.yaml
   ciupgrade  = true
   nameserver = var.nameserver
   ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
@@ -155,10 +155,10 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-init-scripts]
+  depends_on = [null_resource.deploy_cloud_init_scripts]
 }
 
-resource "proxmox_vm_qemu" "k8s-control-plane" {
+resource "proxmox_vm_qemu" "k8s_control_plane" {
   for_each    = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane }
   vmid        = each.value.vmid
   name        = each.value.name
@@ -176,7 +176,7 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
   automatic_reboot = true
 
   # Cloud-Init configuration
-  cicustom   = "vendor=local:snippets/kubeadm-master.yml" # /var/lib/vz/snippets/kubeadm-master.yml
+  cicustom   = "vendor=local:snippets/kubeadm-master.yaml" # /var/lib/vz/snippets/kubeadm-master.yaml
   ciupgrade  = true
   nameserver = var.nameserver
   ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
@@ -214,10 +214,10 @@ resource "proxmox_vm_qemu" "k8s-control-plane" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-init-scripts]
+  depends_on = [null_resource.deploy_cloud_init_scripts]
 }
 
-resource "proxmox_vm_qemu" "k8s-worker" {
+resource "proxmox_vm_qemu" "k8s_worker" {
   for_each    = { for k8s_worker in var.k8s_workers : k8s_worker.name => k8s_worker }
   vmid        = each.value.vmid
   name        = each.value.name
@@ -235,7 +235,7 @@ resource "proxmox_vm_qemu" "k8s-worker" {
   automatic_reboot = true
 
   # Cloud-Init configuration
-  cicustom   = "vendor=local:snippets/kubeadm-worker.yml" # /var/lib/vz/snippets/qemu-guest-agent.yml
+  cicustom   = "vendor=local:snippets/kubeadm-worker.yaml" # /var/lib/vz/snippets/qemu-guest-agent.yaml
   ciupgrade  = true
   nameserver = var.nameserver
   ipconfig0  = "ip=${each.value.ip}/${each.value.cidr_prefix},gw=${var.gateway}"
@@ -275,10 +275,10 @@ resource "proxmox_vm_qemu" "k8s-worker" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy-cloud-init-scripts]
+  depends_on = [null_resource.deploy_cloud_init_scripts]
 }
 
-resource "null_resource" "configure_master_primary" {
+resource "null_resource" "configure_primary_master" {
   for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if k8s_control_plane.primary }
 
   provisioner "local-exec" {
@@ -298,10 +298,10 @@ resource "null_resource" "configure_master_primary" {
     EOF
   }
 
-  depends_on = [proxmox_vm_qemu.k8s-control-plane, proxmox_vm_qemu.k8s-worker]
+  depends_on = [proxmox_vm_qemu.k8s_control_plane, proxmox_vm_qemu.k8s_worker]
 }
 
-resource "null_resource" "get_kube-config" {
+resource "null_resource" "get_kube_config" {
   for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if k8s_control_plane.primary }
 
   provisioner "local-exec" {
@@ -313,10 +313,10 @@ resource "null_resource" "get_kube-config" {
     EOF
   }
 
-  depends_on = [null_resource.configure_master_primary]
+  depends_on = [null_resource.configure_primary_master]
 }
 
-resource "null_resource" "configure_masters_secondary" {
+resource "null_resource" "configure_secondary_masters" {
   for_each = { for k8s_control_plane in var.k8s_control_planes : k8s_control_plane.name => k8s_control_plane if !k8s_control_plane.primary }
 
   provisioner "local-exec" {
@@ -328,7 +328,7 @@ resource "null_resource" "configure_masters_secondary" {
     EOF
   }
 
-  depends_on = [null_resource.configure_master_primary]
+  depends_on = [null_resource.configure_primary_master]
 }
 
 resource "null_resource" "configure_workers" {
@@ -343,5 +343,5 @@ resource "null_resource" "configure_workers" {
     EOF
   }
 
-  depends_on = [null_resource.configure_masters_secondary]
+  depends_on = [null_resource.configure_secondary_masters]
 }

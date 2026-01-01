@@ -28,6 +28,7 @@ apply: init ## Create the infrastructure
 
 .PHONY: plan
 plan: init ## Dry run
+	. $(SECRET_ENV) && \
 	tofu plan
 
 .PHONY: destroy
