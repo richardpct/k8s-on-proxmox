@@ -57,7 +57,7 @@ write_files:
               no log
 
       frontend kube-apiserver
-              bind *:6443
+              bind *:${k8s_api_port}
               mode tcp
               option tcplog
               default_backend kube-apiserver
@@ -66,7 +66,7 @@ write_files:
               bind *:443
               mode tcp
               option tcplog
-              default_backend kube-ingress-worker
+              default_backend kube-gateway-worker
 
       backend kube-apiserver
               balance roundrobin
@@ -76,12 +76,12 @@ write_files:
               server ${server.name} ${server.ip}:${k8s_api_port} check
 %{ endfor ~}
 
-      backend kube-ingress-worker
+      backend kube-gateway-worker
               balance roundrobin
               mode tcp
               option tcp-check
 %{ for server in backend_workers ~}
-              server ${server.name} ${server.ip}:${k8s_ingress_port} check
+              server ${server.name} ${server.ip}:${k8s_gateway_nodeport} check
 %{ endfor ~}
       EOF
 

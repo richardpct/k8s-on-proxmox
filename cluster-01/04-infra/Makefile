@@ -27,10 +27,12 @@ apply: init ## Create the infrastructure
 
 .PHONY: plan
 plan: init ## Dry run
+	. $(SECRET_ENV) && \
 	tofu plan
 
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
+	. $(SECRET_ENV) && \
 	tofu destroy -auto-approve
 	@rm -fv *.backup
 
