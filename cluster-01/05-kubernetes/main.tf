@@ -1,6 +1,6 @@
 module "kubernetes" {
   source           = "../../modules/kubernetes"
-  region           = "eu-west-3"
+  region           = var.region
   bucket           = var.bucket
   key_certificate  = var.key_certificate
   key_dns          = var.key_dns

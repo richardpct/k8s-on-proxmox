@@ -1,6 +1,6 @@
 module "infra" {
   source         = "../../modules/infra"
-  region         = "eu-west-3"
+  region         = var.region
   bucket         = var.bucket
   key_dns        = var.key_dns
   nameserver     = var.nameserver

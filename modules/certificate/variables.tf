@@ -1,6 +1,6 @@
 variable "region" {
   type        = string
-  description = "Region"
+  description = "region name"
 }
 
 variable "my_domain" {

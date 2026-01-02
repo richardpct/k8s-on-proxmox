@@ -12,10 +12,7 @@ help: ## Show help
 
 $(TERRAFORM_LOCK):
 	. $(SECRET_ENV) && \
-	tofu init \
-		-backend-config="bucket=$$TF_VAR_bucket" \
-		-backend-config="key=$$TF_VAR_key_kubernetes" \
-		-backend-config="region=$$TF_VAR_region"
+	tofu init
 
 .PHONY: init
 init: $(TERRAFORM_LOCK) ## Init
@@ -33,6 +30,7 @@ plan: init ## Dry run
 
 .PHONY: destroy
 destroy: ## Destroy the infrastructure
+	. $(SECRET_ENV) && \
 	tofu state ls | while read; do tofu state rm $$REPLY; done
 	. $(SECRET_ENV) && \
 	tofu destroy -auto-approve && make destroy -C ../04-infra

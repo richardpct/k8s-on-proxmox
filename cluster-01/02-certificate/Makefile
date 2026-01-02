@@ -12,10 +12,7 @@ help: ## Show help
 
 $(TERRAFORM_LOCK):
 	. $(SECRET_ENV) && \
-	tofu init \
-		-backend-config="bucket=$$TF_VAR_bucket" \
-		-backend-config="key=$$TF_VAR_key_certificate" \
-		-backend-config="region=$$TF_VAR_region"
+	tofu init
 
 .PHONY: init
 init: $(TERRAFORM_LOCK) ## Init

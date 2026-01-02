@@ -270,7 +270,7 @@ resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
     command = <<EOF
       while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
         echo 'waiting for gitlab-webservice-default service...'
-        sleep 2
+        sleep 10
       done
     EOF
   }

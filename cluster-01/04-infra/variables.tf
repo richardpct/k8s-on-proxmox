@@ -1,6 +1,16 @@
+variable "region" {
+  type        = string
+  description = "region"
+}
+
 variable "bucket" {
   type        = string
   description = "bucket"
+}
+
+variable "key_infra" {
+  type        = string
+  description = "infra key"
 }
 
 variable "key_dns" {
