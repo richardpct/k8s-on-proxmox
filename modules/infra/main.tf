@@ -155,7 +155,7 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy_cloud_init_scripts]
+  depends_on = [null_resource.update_images, null_resource.deploy_cloud_init_scripts]
 }
 
 resource "proxmox_vm_qemu" "k8s_control_plane" {
@@ -214,7 +214,7 @@ resource "proxmox_vm_qemu" "k8s_control_plane" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy_cloud_init_scripts]
+  depends_on = [null_resource.update_images, null_resource.deploy_cloud_init_scripts]
 }
 
 resource "proxmox_vm_qemu" "k8s_worker" {
@@ -275,7 +275,7 @@ resource "proxmox_vm_qemu" "k8s_worker" {
     model  = "virtio"
   }
 
-  depends_on = [null_resource.deploy_cloud_init_scripts]
+  depends_on = [null_resource.update_images, null_resource.deploy_cloud_init_scripts]
 }
 
 resource "null_resource" "configure_primary_master" {
