@@ -128,6 +128,56 @@ applications:
       - CreateNamespace=true
       - ServerSideApply=true
     revisionHistoryLimit: null
+  alloy:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: alloy
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: alloy
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
+  loki:
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: https://github.com/richardpct/argocd-apps.git
+      targetRevision: HEAD
+      path: loki
+      helm:
+        valueFiles:
+        - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: loki
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
 #  velero:
 #    namespace: argocd
 #    additionalLabels: {}
@@ -137,7 +187,7 @@ applications:
 #    project: default
 #    source:
 #      repoURL: https://github.com/richardpct/argocd-apps.git
-#      targetRevision: HEAD
+#      targetRevision: velero
 #      path: velero
 #      helm:
 #        valueFiles:

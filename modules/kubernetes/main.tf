@@ -176,6 +176,23 @@ resource "kubernetes_secret_v1" "grafana_admin_password" {
   depends_on = [kubernetes_namespace_v1.monitoring]
 }
 
+resource "kubernetes_secret_v1" "grafana_loki_auth" {
+  metadata {
+    name      = "grafana-loki-auth"
+    namespace = "monitoring"
+  }
+
+  type = "Opaque"
+
+  # TEMPORARY
+  data = {
+    "password" = "password123"
+    "tenant"   = "tenant1"
+  }
+
+  depends_on = [kubernetes_namespace_v1.monitoring]
+}
+
 resource "kubernetes_cluster_role_v1" "ceph_csi_cephfs_provisioner_custom" {
   metadata {
     name = "ceph-csi-cephfs-provisioner-custom"
@@ -287,4 +304,23 @@ resource "kubectl_manifest" "httproute_gitlab" {
   )
 
   depends_on = [null_resource.wait_svc_gitlab_webservice_default_ready]
+}
+
+resource "kubernetes_namespace_v1" "loki" {
+  metadata {
+    name = "loki"
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubectl_manifest" "httproute_loki" {
+  yaml_body = templatefile("${path.module}/manifests/httproute-loki.yaml.tftpl",
+    {
+      application = "loki"
+      domain      = var.my_domain
+    }
+  )
+
+  depends_on = [kubernetes_namespace_v1.loki]
 }
