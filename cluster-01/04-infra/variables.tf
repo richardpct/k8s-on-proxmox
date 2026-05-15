@@ -10,12 +10,12 @@ variable "bucket" {
 
 variable "key_infra" {
   type        = string
-  description = "infra key"
+  description = "bucket infra key"
 }
 
 variable "key_dns" {
   type        = string
-  description = "dns key"
+  description = "bucket dns key"
 }
 
 variable "nameserver" {

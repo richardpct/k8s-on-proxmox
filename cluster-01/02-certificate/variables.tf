@@ -10,12 +10,12 @@ variable "bucket" {
 
 variable "key_certificate" {
   type        = string
-  description = "certificate key"
+  description = "bucket certificate key"
 }
 
 variable "my_domain" {
   type        = string
-  description = "domain name"
+  description = "my domain name"
 }
 
 variable "my_email" {

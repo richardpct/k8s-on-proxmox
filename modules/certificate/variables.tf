@@ -5,7 +5,7 @@ variable "region" {
 
 variable "my_domain" {
   type        = string
-  description = "domain name"
+  description = "my domain name"
 }
 
 variable "my_email" {

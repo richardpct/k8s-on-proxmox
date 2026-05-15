@@ -1,5 +1,8 @@
 locals {
-  clone                   = "ubuntu-${var.ubuntu_version}-cloudinit"
+  ubuntu_mirror           = "http://fr.archive.ubuntu.com/ubuntu/"
+  ubuntu_version          = "26.04"
+  ubuntu_name             = "resolute"
+  clone                   = "ubuntu-${local.ubuntu_version}-cloudinit"
   master_cores            = 2
   worker_cores            = 4
   lb_cores                = 2
@@ -28,7 +31,7 @@ variable "bucket" {
 
 variable "key_dns" {
   type        = string
-  description = "dns key"
+  description = "bucket dns key"
 }
 
 variable "nameserver" {
@@ -64,18 +67,6 @@ variable "pm_password" {
 variable "is_prod" {
   type        = bool
   description = "is this a production environment?"
-}
-
-variable "ubuntu_mirror" {
-  type        = string
-  description = "ubuntu mirror"
-  default     = "http://fr.archive.ubuntu.com/ubuntu/"
-}
-
-variable "ubuntu_version" {
-  type        = string
-  description = "ubuntu version"
-  default     = "24.04"
 }
 
 variable "pve_nodes" {

@@ -19,14 +19,14 @@ resource "null_resource" "update_images" {
         cd /root
         [ -d my_isos ] || mkdir my_isos
         cd my_isos
-        curl -O https://cloud-images.ubuntu.com/releases/noble/release/SHA256SUMS
-        if ! grep ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
-          curl -O https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
+        curl -O https://cloud-images.ubuntu.com/releases/${local.ubuntu_name}/release/SHA256SUMS
+        if ! grep ubuntu-${local.ubuntu_version}-server-cloudimg-amd64.img SHA256SUMS | sha256sum -c; then
+          curl -O https://cloud-images.ubuntu.com/releases/${local.ubuntu_name}/release/ubuntu-${local.ubuntu_version}-server-cloudimg-amd64.img
           qm destroy ${each.value.cloudinit_img_id} || true
-          qm create ${each.value.cloudinit_img_id} --name ubuntu-${var.ubuntu_version}-cloudinit
-          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-${var.ubuntu_version}-server-cloudimg-amd64.img
+          qm create ${each.value.cloudinit_img_id} --name ubuntu-${local.ubuntu_version}-cloudinit
+          qm set ${each.value.cloudinit_img_id} --scsi0 local-lvm:0,import-from=/root/my_isos/ubuntu-${local.ubuntu_version}-server-cloudimg-amd64.img
           qm template ${each.value.cloudinit_img_id}
-          while ! qm list | grep ubuntu-${var.ubuntu_version}-cloudinit; do sleep 2; done
+          while ! qm list | grep ubuntu-${local.ubuntu_version}-cloudinit; do sleep 2; done
         fi
 IMG
     EOF
@@ -56,7 +56,7 @@ resource "local_file" "kubeadm_master" {
   content = templatefile("${path.module}/cloud-init/kubeadm-master.yaml.tftpl",
     {
       lb_ip         = data.terraform_remote_state.dns.outputs.lb_ip
-      ubuntu_mirror = var.ubuntu_mirror
+      ubuntu_mirror = local.ubuntu_mirror
     }
   )
 }
@@ -65,7 +65,7 @@ resource "local_file" "kubeadm_worker" {
   filename = "/tmp/kubeadm-worker.yaml"
   content = templatefile("${path.module}/cloud-init/kubeadm-worker.yaml.tftpl",
     {
-      ubuntu_mirror = var.ubuntu_mirror
+      ubuntu_mirror = local.ubuntu_mirror
     }
   )
 }
@@ -78,7 +78,7 @@ resource "local_file" "loadbalancer" {
       backend_workers      = var.k8s_workers
       k8s_api_port         = local.k8s_api_port
       k8s_gateway_nodeport = local.k8s_gateway_nodeport
-      ubuntu_mirror        = var.ubuntu_mirror
+      ubuntu_mirror        = local.ubuntu_mirror
     }
   )
 }
