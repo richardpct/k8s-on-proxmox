@@ -155,6 +155,12 @@ resource "proxmox_vm_qemu" "loadbalancer" {
     model  = "virtio"
   }
 
+  startup_shutdown {
+    order            = -1
+    shutdown_timeout = -1
+    startup_delay    = -1
+  }
+
   depends_on = [null_resource.update_images, null_resource.deploy_cloud_init_scripts]
 }
 
@@ -212,6 +218,12 @@ resource "proxmox_vm_qemu" "k8s_control_plane" {
     id     = 0
     bridge = "vmbr0"
     model  = "virtio"
+  }
+
+  startup_shutdown {
+    order            = -1
+    shutdown_timeout = -1
+    startup_delay    = -1
   }
 
   depends_on = [null_resource.update_images, null_resource.deploy_cloud_init_scripts]
@@ -273,6 +285,12 @@ resource "proxmox_vm_qemu" "k8s_worker" {
     id     = 0
     bridge = "vmbr0"
     model  = "virtio"
+  }
+
+  startup_shutdown {
+    order            = -1
+    shutdown_timeout = -1
+    startup_delay    = -1
   }
 
   depends_on = [null_resource.update_images, null_resource.deploy_cloud_init_scripts]
