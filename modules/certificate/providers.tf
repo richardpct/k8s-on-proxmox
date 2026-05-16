@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    acme = {
-      source  = "vancluever/acme"
-      version = "~> 2.36.0"
-    }
-  }
-}
-
 provider "aws" {
   region = var.region
 }

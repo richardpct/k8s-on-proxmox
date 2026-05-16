@@ -10,17 +10,17 @@ variable "bucket" {
 
 variable "key_kubernetes" {
   type        = string
-  description = "kubernetes key"
+  description = "bucket kubernetes key"
 }
 
 variable "key_certificate" {
   type        = string
-  description = "certificate key"
+  description = "bucket certificate key"
 }
 
 variable "key_dns" {
   type        = string
-  description = "dns key"
+  description = "bucket dns key"
 }
 
 variable "cephfs_secret" {
@@ -30,7 +30,7 @@ variable "cephfs_secret" {
 
 variable "my_domain" {
   type        = string
-  description = "domain name"
+  description = "my domain name"
 }
 
 variable "vault_token" {

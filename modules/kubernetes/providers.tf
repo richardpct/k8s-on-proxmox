@@ -1,20 +1,8 @@
 terraform {
   required_providers {
-    kubernetes = {
-      source  = "opentofu/kubernetes"
-      version = "3.0.1"
-    }
     kubectl = {
       source  = "gavinbunney/kubectl"
       version = "1.19.0"
-    }
-    helm = {
-      source  = "opentofu/helm"
-      version = "3.1.1"
-    }
-    vault = {
-      source  = "hashicorp/vault"
-      version = "5.6.0"
     }
   }
 }

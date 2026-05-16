@@ -10,10 +10,10 @@ variable "bucket" {
 
 variable "key_dns" {
   type        = string
-  description = "key dns"
+  description = "bucket key dns"
 }
 
 variable "my_domain" {
   type        = string
-  description = "domain name"
+  description = "my domain name"
 }

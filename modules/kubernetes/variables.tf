@@ -1,6 +1,6 @@
 locals {
   kube_config         = "~/.kube/config"
-  gateway_api_version = "v1.2.0"
+  gateway_api_version = "v1.5.1"
 }
 
 variable "region" {
@@ -15,12 +15,12 @@ variable "bucket" {
 
 variable "key_certificate" {
   type        = string
-  description = "certificate key"
+  description = "bucket certificate key"
 }
 
 variable "key_dns" {
   type        = string
-  description = "dns key"
+  description = "bucket dns key"
 }
 
 variable "cephfs_secret" {
@@ -30,7 +30,7 @@ variable "cephfs_secret" {
 
 variable "my_domain" {
   type        = string
-  description = "domain name"
+  description = "my domain name"
 }
 
 variable "vault_token" {

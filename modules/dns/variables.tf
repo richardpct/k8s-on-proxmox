@@ -10,7 +10,7 @@ variable "bucket" {
 
 variable "my_domain" {
   type        = string
-  description = "domain name"
+  description = "my domain name"
 }
 
 variable "applications" {
