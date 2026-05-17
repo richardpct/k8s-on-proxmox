@@ -4,5 +4,5 @@ module "dns" {
   bucket       = var.bucket
   my_domain    = var.my_domain
   lb_ip        = "192.168.1.131"
-  applications = ["argocd", "gitlab", "grafana", "loki", "prometheus", "vault"]
+  applications = ["argocd", "gitlab", "grafana", "loki", "mimir", "prometheus", "vault"]
 }

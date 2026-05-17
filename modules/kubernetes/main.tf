@@ -324,3 +324,22 @@ resource "kubectl_manifest" "httproute_loki" {
 
   depends_on = [kubernetes_namespace_v1.loki]
 }
+
+resource "kubernetes_namespace_v1" "mimir" {
+  metadata {
+    name = "mimir"
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubectl_manifest" "httproute_mimir" {
+  yaml_body = templatefile("${path.module}/manifests/httproute-mimir.yaml.tftpl",
+    {
+      application = "mimir"
+      domain      = var.my_domain
+    }
+  )
+
+  depends_on = [kubernetes_namespace_v1.mimir]
+}

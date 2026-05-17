@@ -112,7 +112,7 @@ applications:
     project: default
     source:
       repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
+      targetRevision: install-mimir
       path: kube-prometheus-stack
       helm:
         valueFiles:
@@ -178,6 +178,33 @@ applications:
       - CreateNamespace=true
       - ServerSideApply=true
     revisionHistoryLimit: null
+  mimir:
+    namespace: argocd
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://grafana.github.io/helm-charts
+        chart: mimir-distributed
+        targetRevision: 6.1.0-weekly.394
+        helm:
+          valueFiles:
+            - $values/mimir/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: values
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: mimir
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
+
 #  velero:
 #    namespace: argocd
 #    additionalLabels: {}
