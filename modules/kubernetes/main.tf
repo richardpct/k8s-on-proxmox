@@ -155,8 +155,8 @@ resource "null_resource" "wait_vault_up" {
   depends_on = [kubectl_manifest.httproute_vault]
 }
 
-resource "vault_mount" "kvv2" {
-  path        = "kvv2"
+resource "vault_mount" "mimir" {
+  path        = "mimir"
   type        = "kv"
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
@@ -164,8 +164,8 @@ resource "vault_mount" "kvv2" {
   depends_on = [null_resource.wait_vault_up]
 }
 
-resource "vault_kv_secret_v2" "example" {
-  mount     = vault_mount.kvv2.path
+resource "vault_kv_secret_v2" "mimir" {
+  mount     = vault_mount.mimir.path
   name      = "secret"
   data_json = jsonencode(
     {
@@ -175,20 +175,24 @@ resource "vault_kv_secret_v2" "example" {
   )
 }
 
-resource "kubernetes_secret_v1" "csi_cephfs_secret" {
-  metadata {
-    name      = "csi-cephfs-secret"
-    namespace = "ceph-csi"
-  }
+resource "vault_mount" "ceph_csi" {
+  path        = "ceph-csi"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
 
-  type = "Opaque"
+  depends_on = [null_resource.wait_vault_up]
+}
 
-  data = {
-    "userID"  = "admin"
-    "userKey" = var.cephfs_secret
-  }
-
-  depends_on = [kubernetes_namespace_v1.namespace_secrets]
+resource "vault_kv_secret_v2" "ceph_csi" {
+  mount     = vault_mount.ceph_csi.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      userID  = "admin",
+      userKey = var.cephfs_secret
+    }
+  )
 }
 
 resource "kubernetes_secret_v1" "grafana_admin_password" {

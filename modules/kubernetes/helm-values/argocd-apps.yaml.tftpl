@@ -29,23 +29,29 @@ applications:
     revisionHistoryLimit: null
   ceph-csi:
     namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
+    annotations:
+      argocd.argoproj.io/sync-wave: "-4"
     finalizers:
     - resources-finalizer.argocd.argoproj.io
     project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
-      path: ceph-csi
-      helm:
-        valueFiles:
-        - values.yaml
-        parameters:
-          - name: ceph-csi-cephfs.csiConfig[0].clusterID
-            value: ${ceph_cluster_id}
-          - name: ceph-csi-cephfs.storageClass.clusterID
-            value: ${ceph_cluster_id}
+    sources:
+      - repoURL: https://ceph.github.io/csi-charts
+        chart: ceph-csi-cephfs
+        targetRevision: 3.16.2
+        helm:
+          valueFiles:
+            - $values/ceph-csi/values.yaml
+          parameters:
+            - name: csiConfig[0].clusterID
+              value: ${ceph_cluster_id}
+            - name: storageClass.clusterID
+              value: ${ceph_cluster_id}
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: values
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: ceph-csi/extra-manifests
     destination:
       server: https://kubernetes.default.svc
       namespace: ceph-csi
