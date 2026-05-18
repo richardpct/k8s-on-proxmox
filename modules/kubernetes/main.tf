@@ -44,6 +44,33 @@ resource "kubernetes_secret_v1" "default_tls_cert" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
+resource "kubernetes_namespace_v1" "namespace_secrets" {
+  for_each = toset(var.namespace_secrets)
+
+  metadata {
+    name = each.key
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubernetes_secret_v1" "vault_token" {
+  for_each = toset(var.namespace_secrets)
+
+  metadata {
+    name      = "vault-token"
+    namespace = each.key
+  }
+
+  type = "Opaque"
+
+  data = {
+    "token" = var.vault_token
+  }
+
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
+}
+
 resource "null_resource" "install-gateway-crds" {
   provisioner "local-exec" {
     command = <<EOF
@@ -128,12 +155,24 @@ resource "null_resource" "wait_vault_up" {
   depends_on = [kubectl_manifest.httproute_vault]
 }
 
-resource "kubernetes_namespace_v1" "ceph_csi" {
-  metadata {
-    name = "ceph-csi"
-  }
+resource "vault_mount" "kvv2" {
+  path        = "kvv2"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
 
-  depends_on = [null_resource.wait_kubernetes_ready]
+  depends_on = [null_resource.wait_vault_up]
+}
+
+resource "vault_kv_secret_v2" "example" {
+  mount     = vault_mount.kvv2.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      zip = "zap",
+      foo = "bar"
+    }
+  )
 }
 
 resource "kubernetes_secret_v1" "csi_cephfs_secret" {
@@ -149,15 +188,7 @@ resource "kubernetes_secret_v1" "csi_cephfs_secret" {
     "userKey" = var.cephfs_secret
   }
 
-  depends_on = [kubernetes_namespace_v1.ceph_csi]
-}
-
-resource "kubernetes_namespace_v1" "monitoring" {
-  metadata {
-    name = "monitoring"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
 
 resource "kubernetes_secret_v1" "grafana_admin_password" {
@@ -173,7 +204,7 @@ resource "kubernetes_secret_v1" "grafana_admin_password" {
     "admin-password" = var.grafana_password
   }
 
-  depends_on = [kubernetes_namespace_v1.monitoring]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
 
 resource "kubernetes_secret_v1" "grafana_loki_auth" {
@@ -190,7 +221,7 @@ resource "kubernetes_secret_v1" "grafana_loki_auth" {
     "tenant"   = "tenant1"
   }
 
-  depends_on = [kubernetes_namespace_v1.monitoring]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
 
 resource "kubernetes_cluster_role_v1" "ceph_csi_cephfs_provisioner_custom" {
@@ -222,7 +253,7 @@ resource "kubernetes_cluster_role_binding_v1" "ceph_csi_cephfs_provisioner_custo
     namespace = "ceph-csi"
   }
 
-  depends_on = [kubernetes_namespace_v1.ceph_csi, kubernetes_cluster_role_v1.ceph_csi_cephfs_provisioner_custom]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets, kubernetes_cluster_role_v1.ceph_csi_cephfs_provisioner_custom]
 }
 
 resource "helm_release" "argo_cd" {
@@ -259,14 +290,6 @@ resource "helm_release" "argocd_apps" {
   depends_on = [helm_release.argo_cd]
 }
 
-resource "kubernetes_namespace_v1" "gitlab" {
-  metadata {
-    name = "gitlab"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
 resource "kubernetes_secret_v1" "gitlab_root_password" {
   metadata {
     name      = "gitlab-root-password"
@@ -279,7 +302,7 @@ resource "kubernetes_secret_v1" "gitlab_root_password" {
     "password" = var.gitlab_password
   }
 
-  depends_on = [kubernetes_namespace_v1.gitlab]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
 
 resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
@@ -306,14 +329,6 @@ resource "kubectl_manifest" "httproute_gitlab" {
   depends_on = [null_resource.wait_svc_gitlab_webservice_default_ready]
 }
 
-resource "kubernetes_namespace_v1" "loki" {
-  metadata {
-    name = "loki"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
 resource "kubectl_manifest" "httproute_loki" {
   yaml_body = templatefile("${path.module}/manifests/httproute-loki.yaml.tftpl",
     {
@@ -322,15 +337,7 @@ resource "kubectl_manifest" "httproute_loki" {
     }
   )
 
-  depends_on = [kubernetes_namespace_v1.loki]
-}
-
-resource "kubernetes_namespace_v1" "mimir" {
-  metadata {
-    name = "mimir"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
 
 resource "kubectl_manifest" "httproute_mimir" {
@@ -341,5 +348,5 @@ resource "kubectl_manifest" "httproute_mimir" {
     }
   )
 
-  depends_on = [kubernetes_namespace_v1.mimir]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }

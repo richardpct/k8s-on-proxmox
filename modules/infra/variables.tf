@@ -7,7 +7,7 @@ locals {
   worker_cores            = 4
   lb_cores                = 2
   master_memory           = 4096
-  worker_memory           = 8192
+  worker_memory           = 12288
   lb_memory               = 2048
   master_disk             = "10G"
   worker_disk             = "30G"

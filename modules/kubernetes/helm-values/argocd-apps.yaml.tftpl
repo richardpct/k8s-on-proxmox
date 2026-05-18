@@ -1,4 +1,32 @@
 applications:
+  external-secrets:
+    namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "-5"
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://charts.external-secrets.io
+        chart: external-secrets
+        targetRevision: 2.5.0
+        helm:
+          valueFiles:
+            - $values/external-secrets/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: values
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: external-secrets
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
   ceph-csi:
     namespace: argocd
     additionalLabels: {}
@@ -193,6 +221,9 @@ applications:
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
         ref: values
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: mimir/extra-manifests
     destination:
       server: https://kubernetes.default.svc
       namespace: mimir
@@ -229,24 +260,3 @@ applications:
 #      syncOptions:
 #      - CreateNamespace=true
 #    revisionHistoryLimit: null
-
-# -- Deploy Argo CD Projects within this helm release
-# @default -- `{}` (See [values.yaml])
-## Ref: https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/
-projects: {}
-
-# -- Deploy Argo CD ApplicationSets within this helm release
-# @default -- `{}` (See [values.yaml])
-## Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/
-applicationsets: {}
-
-# --  Deploy Argo CD Applications/ApplicationSets/Projects within this helm release
-# @default -- `[]` (See [values.yaml])
-## Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/
-itemTemplates: []
-
-# -- DEPRECATED - Please refer [Deprecation Notice](https://github.com/argoproj-labs/argocd-extensions?tab=readme-ov-file#deprecation-notice) for more info.
-# @default -- `{}` (See [values.yaml])
-## This function in tech preview stage, do expect unstability or breaking changes in newer versions. Bump image.tag if necessary.
-## Ref: https://github.com/argoproj-labs/argocd-extensions
-extensions: {}

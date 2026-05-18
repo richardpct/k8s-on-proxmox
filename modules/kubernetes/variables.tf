@@ -52,3 +52,8 @@ variable "grafana_password" {
   type        = string
   description = "grafana password"
 }
+
+variable "namespace_secrets" {
+  type        = list(string)
+  description = "namespaces requiring to create a external secrets"
+}
