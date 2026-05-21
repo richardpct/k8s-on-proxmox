@@ -35,6 +35,9 @@ applications:
     - resources-finalizer.argocd.argoproj.io
     project: default
     sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: ceph-csi/extra-manifests
       - repoURL: https://ceph.github.io/csi-charts
         chart: ceph-csi-cephfs
         targetRevision: 3.16.2
@@ -49,9 +52,6 @@ applications:
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
         ref: values
-      - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
-        path: ceph-csi/extra-manifests
     destination:
       server: https://kubernetes.default.svc
       namespace: ceph-csi
@@ -61,6 +61,32 @@ applications:
         selfHeal: false
       syncOptions:
       - CreateNamespace=true
+    revisionHistoryLimit: null
+  kube-prometheus-stack:
+    namespace: argocd
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://prometheus-community.github.io/helm-charts
+        chart: kube-prometheus-stack
+        targetRevision: 85.1.3
+        helm:
+          valueFiles:
+          - $values/kube-prometheus-stack/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: values
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: monitoring
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
     revisionHistoryLimit: null
   metrics-server:
     namespace: argocd
@@ -115,18 +141,22 @@ applications:
 #    revisionHistoryLimit: null
   gitlab:
     namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
     finalizers:
     - resources-finalizer.argocd.argoproj.io
     project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
-      path: gitlab
-      helm:
-        valueFiles:
-        - values.yaml
+    sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: gitlab/extra-manifests
+      - repoURL: https://charts.gitlab.io
+        chart: gitlab
+        targetRevision: 9.11.4
+        helm:
+          valueFiles:
+          - $values/gitlab/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: values
     destination:
       server: https://kubernetes.default.svc
       namespace: gitlab
@@ -136,31 +166,6 @@ applications:
         selfHeal: false
       syncOptions:
       - CreateNamespace=true
-    revisionHistoryLimit: null
-  kube-prometheus-stack:
-    namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
-    finalizers:
-    - resources-finalizer.argocd.argoproj.io
-    project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: install-mimir
-      path: kube-prometheus-stack
-      helm:
-        valueFiles:
-        - values.yaml
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: monitoring
-    syncPolicy:
-      automated:
-        prune: false
-        selfHeal: false
-      syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
     revisionHistoryLimit: null
   alloy:
     namespace: argocd
@@ -189,18 +194,22 @@ applications:
     revisionHistoryLimit: null
   loki:
     namespace: argocd
-    additionalLabels: {}
-    additionalAnnotations: {}
     finalizers:
     - resources-finalizer.argocd.argoproj.io
     project: default
-    source:
-      repoURL: https://github.com/richardpct/argocd-apps.git
-      targetRevision: HEAD
-      path: loki
-      helm:
-        valueFiles:
-        - values.yaml
+    sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: loki/extra-manifests
+      - repoURL: https://grafana.github.io/helm-charts
+        chart: loki
+        targetRevision: 6.53.0
+        helm:
+          valueFiles:
+          - $values/loki/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: values
     destination:
       server: https://kubernetes.default.svc
       namespace: loki
@@ -218,6 +227,9 @@ applications:
     - resources-finalizer.argocd.argoproj.io
     project: default
     sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: mimir/extra-manifests
       - repoURL: https://grafana.github.io/helm-charts
         chart: mimir-distributed
         targetRevision: 6.1.0-weekly.394
@@ -227,9 +239,6 @@ applications:
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
         ref: values
-      - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
-        path: mimir/extra-manifests
     destination:
       server: https://kubernetes.default.svc
       namespace: mimir
@@ -241,7 +250,6 @@ applications:
       - CreateNamespace=true
       - ServerSideApply=true
     revisionHistoryLimit: null
-
 #  velero:
 #    namespace: argocd
 #    additionalLabels: {}

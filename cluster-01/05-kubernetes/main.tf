@@ -10,5 +10,5 @@ module "kubernetes" {
   ceph_cluster_id   = var.ceph_cluster_id
   gitlab_password   = var.gitlab_password
   grafana_password  = var.grafana_password
-  namespace_secrets = ["alloy", "ceph-csi", "gitlab", "grafana", "loki", "mimir", "monitoring", "prometheus", "vault"]
+  namespace_secrets = ["alloy", "ceph-csi", "gitlab", "loki", "mimir", "monitoring", "vault"]
 }

@@ -195,37 +195,35 @@ resource "vault_kv_secret_v2" "ceph_csi" {
   )
 }
 
-resource "kubernetes_secret_v1" "grafana_admin_password" {
-  metadata {
-    name      = "grafana-admin-password"
-    namespace = "monitoring"
-  }
+resource "vault_mount" "grafana" {
+  path        = "grafana"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
 
-  type = "Opaque"
-
-  data = {
-    "admin-user"     = "admin"
-    "admin-password" = var.grafana_password
-  }
-
-  depends_on = [kubernetes_namespace_v1.namespace_secrets]
+  depends_on = [null_resource.wait_vault_up]
 }
 
-resource "kubernetes_secret_v1" "grafana_loki_auth" {
-  metadata {
-    name      = "grafana-loki-auth"
-    namespace = "monitoring"
-  }
+resource "vault_kv_secret_v2" "grafana" {
+  mount     = vault_mount.grafana.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      admin-user     = "admin",
+      admin-password = var.grafana_password
+    }
+  )
+}
 
-  type = "Opaque"
-
-  # TEMPORARY
-  data = {
-    "password" = "password123"
-    "tenant"   = "tenant1"
-  }
-
-  depends_on = [kubernetes_namespace_v1.namespace_secrets]
+resource "vault_kv_secret_v2" "loki" {
+  mount     = vault_mount.grafana.path
+  name      = "loki"
+  data_json = jsonencode(
+    {
+      password = "password123",
+      tenant   = "tenant1"
+    }
+  )
 }
 
 resource "kubernetes_cluster_role_v1" "ceph_csi_cephfs_provisioner_custom" {
@@ -294,19 +292,23 @@ resource "helm_release" "argocd_apps" {
   depends_on = [helm_release.argo_cd]
 }
 
-resource "kubernetes_secret_v1" "gitlab_root_password" {
-  metadata {
-    name      = "gitlab-root-password"
-    namespace = "gitlab"
-  }
+resource "vault_mount" "gitlab" {
+  path        = "gitlab"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
 
-  type = "Opaque"
+  depends_on = [null_resource.wait_vault_up]
+}
 
-  data = {
-    "password" = var.gitlab_password
-  }
-
-  depends_on = [kubernetes_namespace_v1.namespace_secrets]
+resource "vault_kv_secret_v2" "gitlab" {
+  mount     = vault_mount.gitlab.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      password = var.gitlab_password
+    }
+  )
 }
 
 resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
@@ -320,37 +322,4 @@ resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
   }
 
   depends_on = [helm_release.argocd_apps]
-}
-
-resource "kubectl_manifest" "httproute_gitlab" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-gitlab.yaml.tftpl",
-    {
-      application = "gitlab"
-      domain      = var.my_domain
-    }
-  )
-
-  depends_on = [null_resource.wait_svc_gitlab_webservice_default_ready]
-}
-
-resource "kubectl_manifest" "httproute_loki" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-loki.yaml.tftpl",
-    {
-      application = "loki"
-      domain      = var.my_domain
-    }
-  )
-
-  depends_on = [kubernetes_namespace_v1.namespace_secrets]
-}
-
-resource "kubectl_manifest" "httproute_mimir" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-mimir.yaml.tftpl",
-    {
-      application = "mimir"
-      domain      = var.my_domain
-    }
-  )
-
-  depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
