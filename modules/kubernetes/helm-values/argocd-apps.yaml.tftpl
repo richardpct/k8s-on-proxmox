@@ -12,10 +12,10 @@ applications:
         targetRevision: 2.5.0
         helm:
           valueFiles:
-            - $values/external-secrets/values.yaml
+            - $myrepo/external-secrets/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: external-secrets
@@ -43,7 +43,7 @@ applications:
         targetRevision: 3.16.2
         helm:
           valueFiles:
-            - $values/ceph-csi/values.yaml
+            - $myrepo/ceph-csi/values.yaml
           parameters:
             - name: csiConfig[0].clusterID
               value: ${ceph_cluster_id}
@@ -51,7 +51,7 @@ applications:
               value: ${ceph_cluster_id}
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: ceph-csi
@@ -68,15 +68,15 @@ applications:
     - resources-finalizer.argocd.argoproj.io
     project: default
     sources:
-      - repoURL: https://prometheus-community.github.io/helm-charts
+      - repoURL: oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack
         chart: kube-prometheus-stack
         targetRevision: 85.1.3
         helm:
           valueFiles:
-          - $values/kube-prometheus-stack/values.yaml
+          - $myrepo/kube-prometheus-stack/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: monitoring
@@ -99,10 +99,10 @@ applications:
         targetRevision: 1.8.1
         helm:
           valueFiles:
-          - $values/alloy/values.yaml
+          - $myrepo/alloy/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: alloy
@@ -128,10 +128,10 @@ applications:
         targetRevision: 16.1.0
         helm:
           valueFiles:
-          - $values/loki/values.yaml
+          - $myrepo/loki/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: loki
@@ -157,10 +157,10 @@ applications:
         targetRevision: 6.1.0-weekly.394
         helm:
           valueFiles:
-            - $values/mimir/values.yaml
+            - $myrepo/mimir/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: mimir
@@ -183,10 +183,10 @@ applications:
         targetRevision: 3.13.0
         helm:
           valueFiles:
-          - $values/metrics-server/values.yaml
+          - $myrepo/metrics-server/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: metrics
@@ -214,10 +214,10 @@ applications:
         targetRevision: 9.11.4
         helm:
           valueFiles:
-          - $values/gitlab/values.yaml
+          - $myrepo/gitlab/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
         targetRevision: install-mimir
-        ref: values
+        ref: myrepo
     destination:
       server: https://kubernetes.default.svc
       namespace: gitlab
