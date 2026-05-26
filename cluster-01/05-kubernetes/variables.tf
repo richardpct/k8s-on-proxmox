@@ -52,3 +52,13 @@ variable "grafana_password" {
   type        = string
   description = "grafana password"
 }
+
+variable "docker_registry_access_key" {
+  type        = string
+  description = "docker registry access key"
+}
+
+variable "docker_registry_secret_key" {
+  type        = string
+  description = "docker registry secret key"
+}

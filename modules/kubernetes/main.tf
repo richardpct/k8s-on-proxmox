@@ -116,6 +116,31 @@ resource "kubectl_manifest" "gateway" {
   depends_on = [helm_release.cilium]
 }
 
+resource "helm_release" "kyverno" {
+  name             = "kyverno"
+  repository       = "https://kyverno.github.io/kyverno"
+  chart            = "kyverno"
+  namespace        = "kyverno"
+  create_namespace = true
+  force_update     = true
+
+  values = [
+    "${file("${path.module}/helm-values/kyverno.yaml")}"
+  ]
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubectl_manifest" "kyverno_policies" {
+  yaml_body = templatefile("${path.module}/manifests/kyverno_policies.yaml.tftpl",
+    {
+      my_domain = var.my_domain
+    }
+  )
+
+  depends_on = [helm_release.kyverno]
+}
+
 resource "helm_release" "vault" {
   name             = "vault"
   repository       = "https://helm.releases.hashicorp.com"
@@ -311,15 +336,38 @@ resource "vault_kv_secret_v2" "gitlab" {
   )
 }
 
-resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
-  provisioner "local-exec" {
-    command = <<EOF
-      while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
-        echo 'waiting for gitlab-webservice-default service...'
-        sleep 10
-      done
-    EOF
-  }
+resource "vault_mount" "docker_registry" {
+  path        = "docker-registry"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
 
-  depends_on = [helm_release.argocd_apps]
+  depends_on = [null_resource.wait_vault_up]
 }
+
+resource "vault_kv_secret_v2" "docker_registry" {
+  mount     = vault_mount.docker_registry.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      s3AccessKey    = var.docker_registry_access_key,
+      s3SecretKey    = var.docker_registry_secret_key,
+      haSharedSecret = "",
+      proxyUsername  = "",
+      proxyPassword  = ""
+    }
+  )
+}
+
+#resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
+#  provisioner "local-exec" {
+#    command = <<EOF
+#      while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
+#        echo 'waiting for gitlab-webservice-default service...'
+#        sleep 10
+#      done
+#    EOF
+#  }
+#
+#  depends_on = [helm_release.argocd_apps]
+#}

@@ -2,7 +2,7 @@ applications:
   external-secrets:
     namespace: argocd
     annotations:
-      argocd.argoproj.io/sync-wave: "-5"
+      argocd.argoproj.io/sync-wave: "-10"
     finalizers:
     - resources-finalizer.argocd.argoproj.io
     project: default
@@ -27,10 +27,41 @@ applications:
       - CreateNamespace=true
       - ServerSideApply=true
     revisionHistoryLimit: null
+  docker-registry:
+    namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "-10"
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: docker-registry/extra-manifests
+      - repoURL: https://twuni.github.io/docker-registry.helm
+        chart: docker-registry
+        targetRevision: 3.0.0
+        helm:
+          valueFiles:
+            - $myrepo/docker-registry/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        ref: myrepo
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: docker-registry
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
   ceph-csi:
     namespace: argocd
     annotations:
-      argocd.argoproj.io/sync-wave: "-4"
+      argocd.argoproj.io/sync-wave: "-5"
     finalizers:
     - resources-finalizer.argocd.argoproj.io
     project: default
@@ -64,6 +95,8 @@ applications:
     revisionHistoryLimit: null
   kube-prometheus-stack:
     namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "20"
     finalizers:
     - resources-finalizer.argocd.argoproj.io
     project: default
