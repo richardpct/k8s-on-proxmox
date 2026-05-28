@@ -298,6 +298,49 @@ resource "helm_release" "argo_cd" {
   depends_on = [kubernetes_cluster_role_binding_v1.ceph_csi_cephfs_provisioner_custom]
 }
 
+resource "helm_release" "argocd_infra" {
+  name             = "argocd-infra"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argocd-apps"
+  namespace        = "argocd"
+  create_namespace = true
+  force_update     = true
+
+  values = [
+    templatefile("${path.module}/helm-values/argocd-infra.yaml.tftpl",
+      {
+        ceph_cluster_id = var.ceph_cluster_id
+      }
+    )
+  ]
+
+  depends_on = [helm_release.argo_cd]
+}
+
+resource "null_resource" "wait_docker_registry_ready" {
+  provisioner "local-exec" {
+    command = <<EOF
+      while ! curl https://registry.${var.my_domain}/v2/ | grep {}; do
+        sleep 10
+      done
+    EOF
+  }
+
+  depends_on = [helm_release.argocd_infra]
+}
+
+resource "null_resource" "wait_cephfs_csi_ready" {
+  provisioner "local-exec" {
+    command = <<EOF
+      while ! kubectl get csidrivers.storage.k8s.io | grep cephfs.csi.ceph.com; do
+        sleep 10
+      done
+    EOF
+  }
+
+  depends_on = [helm_release.argocd_infra]
+}
+
 resource "helm_release" "argocd_apps" {
   name             = "argocd-apps"
   repository       = "https://argoproj.github.io/argo-helm"
@@ -314,7 +357,7 @@ resource "helm_release" "argocd_apps" {
     )
   ]
 
-  depends_on = [helm_release.argo_cd]
+  depends_on = [null_resource.wait_docker_registry_ready, null_resource.wait_cephfs_csi_ready]
 }
 
 resource "vault_mount" "gitlab" {
@@ -358,16 +401,3 @@ resource "vault_kv_secret_v2" "docker_registry" {
     }
   )
 }
-
-#resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
-#  provisioner "local-exec" {
-#    command = <<EOF
-#      while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
-#        echo 'waiting for gitlab-webservice-default service...'
-#        sleep 10
-#      done
-#    EOF
-#  }
-#
-#  depends_on = [helm_release.argocd_apps]
-#}
