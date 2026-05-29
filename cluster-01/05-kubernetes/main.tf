@@ -12,5 +12,5 @@ module "kubernetes" {
   grafana_password           = var.grafana_password
   docker_registry_access_key = var.docker_registry_access_key
   docker_registry_secret_key = var.docker_registry_secret_key
-  namespace_secrets          = ["alloy", "ceph-csi", "docker-registry", "gitlab", "loki", "mimir", "monitoring", "vault"]
+  namespace_secrets          = ["alloy", "ceph-csi", "docker-registry", "gitlab", "loki", "mimir", "prometheus", "vault"]
 }
