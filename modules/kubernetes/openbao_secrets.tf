@@ -1,14 +1,14 @@
-resource "null_resource" "wait_vault_up" {
+resource "null_resource" "wait_openbao_up" {
   provisioner "local-exec" {
     command = <<EOF
-      while [ "$(curl -s --connect-timeout 2 https://vault.${var.my_domain}/v1/sys/health | jq .initialized)" != 'true' ]
+      while [ "$(curl -s --connect-timeout 2 https://openbao.${var.my_domain}/v1/sys/health | jq .initialized)" != 'true' ]
       do
         sleep 1
       done
     EOF
   }
 
-  depends_on = [kubectl_manifest.httproute_vault]
+  depends_on = [kubectl_manifest.httproute_openbao]
 }
 
 # mimir
@@ -18,7 +18,7 @@ resource "vault_mount" "mimir" {
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
 
-  depends_on = [null_resource.wait_vault_up]
+  depends_on = [null_resource.wait_openbao_up]
 }
 
 resource "vault_kv_secret_v2" "mimir" {
@@ -39,7 +39,7 @@ resource "vault_mount" "ceph_csi" {
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
 
-  depends_on = [null_resource.wait_vault_up]
+  depends_on = [null_resource.wait_openbao_up]
 }
 
 resource "vault_kv_secret_v2" "ceph_csi" {
@@ -60,7 +60,7 @@ resource "vault_mount" "grafana" {
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
 
-  depends_on = [null_resource.wait_vault_up]
+  depends_on = [null_resource.wait_openbao_up]
 }
 
 resource "vault_kv_secret_v2" "grafana" {
@@ -93,7 +93,7 @@ resource "vault_mount" "gitlab" {
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
 
-  depends_on = [null_resource.wait_vault_up]
+  depends_on = [null_resource.wait_openbao_up]
 }
 
 resource "vault_kv_secret_v2" "gitlab" {
@@ -113,7 +113,7 @@ resource "vault_mount" "docker_registry" {
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
 
-  depends_on = [null_resource.wait_vault_up]
+  depends_on = [null_resource.wait_openbao_up]
 }
 
 resource "vault_kv_secret_v2" "docker_registry" {

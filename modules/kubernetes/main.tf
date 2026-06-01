@@ -54,18 +54,18 @@ resource "kubernetes_namespace_v1" "namespace_secrets" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "kubernetes_secret_v1" "vault_token" {
+resource "kubernetes_secret_v1" "openbao_token" {
   for_each = toset(var.namespace_secrets)
 
   metadata {
-    name      = "vault-token"
+    name      = "openbao-token"
     namespace = each.key
   }
 
   type = "Opaque"
 
   data = {
-    "token" = var.vault_token
+    "token" = var.openbao_token
   }
 
   depends_on = [kubernetes_namespace_v1.namespace_secrets]
@@ -141,30 +141,30 @@ resource "kubectl_manifest" "kyverno_policies" {
   depends_on = [helm_release.kyverno]
 }
 
-resource "helm_release" "vault" {
-  name             = "vault"
-  repository       = "https://helm.releases.hashicorp.com"
-  chart            = "vault"
-  namespace        = "vault"
+resource "helm_release" "openbao" {
+  name             = "openbao"
+  repository       = "https://openbao.github.io/openbao-helm"
+  chart            = "openbao"
+  namespace        = "openbao"
   create_namespace = true
   force_update     = true
 
   values = [
-    "${file("${path.module}/helm-values/vault.yaml")}"
+    "${file("${path.module}/helm-values/openbao.yaml")}"
   ]
 
   depends_on = [helm_release.cilium]
 }
 
-resource "kubectl_manifest" "httproute_vault" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-vault.yaml.tftpl",
+resource "kubectl_manifest" "httproute_openbao" {
+  yaml_body = templatefile("${path.module}/manifests/httproute-openbao.yaml.tftpl",
     {
-      application = "vault"
+      application = "openbao"
       domain      = var.my_domain
     }
   )
 
-  depends_on = [helm_release.vault]
+  depends_on = [helm_release.openbao]
 }
 
 resource "kubernetes_cluster_role_v1" "ceph_csi_cephfs_provisioner_custom" {

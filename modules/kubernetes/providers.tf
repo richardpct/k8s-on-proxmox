@@ -22,6 +22,6 @@ provider "helm" {
 }
 
 provider "vault" {
-  address = "https://vault.${var.my_domain}"
-  token   = var.vault_token
+  address = "https://openbao.${var.my_domain}"
+  token   = var.openbao_token
 }

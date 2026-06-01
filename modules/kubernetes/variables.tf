@@ -33,9 +33,9 @@ variable "my_domain" {
   description = "my domain name"
 }
 
-variable "vault_token" {
+variable "openbao_token" {
   type        = string
-  description = "vault token"
+  description = "openbao token"
 }
 
 variable "ceph_cluster_id" {
