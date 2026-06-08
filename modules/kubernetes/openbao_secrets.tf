@@ -11,6 +11,31 @@ resource "null_resource" "wait_openbao_up" {
   depends_on = [kubectl_manifest.httproute_openbao]
 }
 
+# authentik
+resource "vault_mount" "authentik" {
+  path        = "authentik"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
+
+  depends_on = [null_resource.wait_openbao_up]
+}
+
+resource "vault_kv_secret_v2" "authentik" {
+  mount     = vault_mount.authentik.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      AUTHENTIK_SECRET_KEY           = var.authentik_secret_key,
+      AUTHENTIK_POSTGRESQL__PASSWORD = var.authentik_postgres_pass,
+      AUTHENTIK_POSTGRESQL__HOST     = "authentik-postgresql",
+      AUTHENTIK_BOOTSTRAP_PASSWORD   = var.my_password,
+      GRAFANA_PASSWORD               = var.my_password,
+      GRAFANA_CLIENT_SECRET          = var.authentik_grafana_client_secret
+    }
+  )
+}
+
 # mimir
 resource "vault_mount" "mimir" {
   path        = "mimir"
@@ -68,8 +93,7 @@ resource "vault_kv_secret_v2" "grafana" {
   name      = "secret"
   data_json = jsonencode(
     {
-      admin-user     = "admin",
-      admin-password = var.grafana_password
+      authentik_grafana_client_secret = var.authentik_grafana_client_secret
     }
   )
 }

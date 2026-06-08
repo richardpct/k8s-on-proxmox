@@ -43,14 +43,14 @@ variable "ceph_cluster_id" {
   description = "ceph cluster id"
 }
 
+variable "my_password" {
+  type        = string
+  description = "my password"
+}
+
 variable "gitlab_password" {
   type        = string
   description = "gitlab password"
-}
-
-variable "grafana_password" {
-  type        = string
-  description = "grafana password"
 }
 
 variable "docker_registry_access_key" {
@@ -61,4 +61,19 @@ variable "docker_registry_access_key" {
 variable "docker_registry_secret_key" {
   type        = string
   description = "docker registry secret key"
+}
+
+variable "authentik_secret_key" {
+  type        = string
+  description = "authentik secret key"
+}
+
+variable "authentik_postgres_pass" {
+  type        = string
+  description = "authentik postgres pass"
+}
+
+variable "authentik_grafana_client_secret" {
+  type        = string
+  description = "authentik grafana client secret"
 }

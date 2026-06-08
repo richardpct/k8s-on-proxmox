@@ -10,7 +10,7 @@ locals {
   worker_memory           = 12288
   lb_memory               = 2048
   master_disk             = "10G"
-  worker_disk             = "30G"
+  worker_disk             = "40G"
   lb_disk                 = "10G"
   k8s_api_port            = 6443
   k8s_gateway_nodeport    = 30443
