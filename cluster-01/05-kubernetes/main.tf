@@ -15,5 +15,7 @@ module "kubernetes" {
   authentik_secret_key            = var.authentik_secret_key
   authentik_postgres_pass         = var.authentik_postgres_pass
   authentik_grafana_client_secret = var.authentik_grafana_client_secret
+  loki_htpasswd                   = var.loki_htpasswd
+  loki_password                   = var.loki_password
   namespace_secrets               = ["alloy", "authentik", "ceph-csi", "docker-registry", "gitlab", "loki", "mimir", "openbao", "prometheus"]
 }

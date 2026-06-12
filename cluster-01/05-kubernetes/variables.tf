@@ -77,3 +77,13 @@ variable "authentik_grafana_client_secret" {
   type        = string
   description = "authentik grafana client secret"
 }
+
+variable "loki_htpasswd" {
+  type        = string
+  description = "loki htpasswd"
+}
+
+variable "loki_password" {
+  type        = string
+  description = "loki password"
+}

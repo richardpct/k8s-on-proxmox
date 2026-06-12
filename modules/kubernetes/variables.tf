@@ -78,6 +78,16 @@ variable "authentik_grafana_client_secret" {
   description = "authentik grafana client secret"
 }
 
+variable "loki_htpasswd" {
+  type        = string
+  description = "loki htpasswd"
+}
+
+variable "loki_password" {
+  type        = string
+  description = "loki password"
+}
+
 variable "namespace_secrets" {
   type        = list(string)
   description = "namespaces requiring to create a external secrets"

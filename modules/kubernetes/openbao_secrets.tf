@@ -78,7 +78,7 @@ resource "vault_kv_secret_v2" "ceph_csi" {
   )
 }
 
-# grafana
+# prometheus grafana
 resource "vault_mount" "grafana" {
   path        = "grafana"
   type        = "kv"
@@ -88,7 +88,7 @@ resource "vault_mount" "grafana" {
   depends_on = [null_resource.wait_openbao_up]
 }
 
-resource "vault_kv_secret_v2" "grafana" {
+resource "vault_kv_secret_v2" "prometheus_grafana" {
   mount     = vault_mount.grafana.path
   name      = "secret"
   data_json = jsonencode(
@@ -98,14 +98,34 @@ resource "vault_kv_secret_v2" "grafana" {
   )
 }
 
-# loki
-resource "vault_kv_secret_v2" "loki" {
+# prometheus loki
+resource "vault_kv_secret_v2" "prometheus_loki" {
   mount     = vault_mount.grafana.path
   name      = "loki"
   data_json = jsonencode(
     {
-      password = "password123",
+      password = var.loki_password,
       tenant   = "tenant1"
+    }
+  )
+}
+
+# loki
+resource "vault_mount" "loki" {
+  path        = "loki"
+  type        = "kv"
+  options     = { version = "2" }
+  description = "KV Version 2 secret engine mount"
+
+  depends_on = [null_resource.wait_openbao_up]
+}
+
+resource "vault_kv_secret_v2" "loki" {
+  mount     = vault_mount.loki.path
+  name      = "secret"
+  data_json = jsonencode(
+    {
+      htpasswd = var.loki_htpasswd
     }
   )
 }
