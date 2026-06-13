@@ -78,8 +78,8 @@ resource "vault_kv_secret_v2" "ceph_csi" {
 }
 
 # prometheus grafana
-resource "vault_mount" "grafana" {
-  path        = "grafana"
+resource "vault_mount" "prometheus" {
+  path        = "prometheus"
   type        = "kv"
   options     = { version = "2" }
   description = "KV Version 2 secret engine mount"
@@ -88,7 +88,7 @@ resource "vault_mount" "grafana" {
 }
 
 resource "vault_kv_secret_v2" "prometheus_grafana" {
-  mount     = vault_mount.grafana.path
+  mount     = vault_mount.prometheus.path
   name      = "secret"
   data_json = jsonencode(
     {
@@ -99,7 +99,7 @@ resource "vault_kv_secret_v2" "prometheus_grafana" {
 
 # prometheus loki
 resource "vault_kv_secret_v2" "prometheus_loki" {
-  mount     = vault_mount.grafana.path
+  mount     = vault_mount.prometheus.path
   name      = "loki"
   data_json = jsonencode(
     {
@@ -111,7 +111,7 @@ resource "vault_kv_secret_v2" "prometheus_loki" {
 
 # prometheus mimir
 resource "vault_kv_secret_v2" "prometheus_mimir" {
-  mount     = vault_mount.grafana.path
+  mount     = vault_mount.prometheus.path
   name      = "mimir"
   data_json = jsonencode(
     {
