@@ -33,6 +33,9 @@ applications:
     - resources-finalizer.argocd.argoproj.io
     project: default
     sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: install-mimir
+        path: alloy/extra-manifests
       - repoURL: https://grafana.github.io/helm-charts
         chart: alloy
         targetRevision: 1.8.1
