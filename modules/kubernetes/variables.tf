@@ -88,6 +88,16 @@ variable "loki_password" {
   description = "loki password"
 }
 
+variable "mimir_htpasswd" {
+  type        = string
+  description = "mimir htpasswd"
+}
+
+variable "mimir_password" {
+  type        = string
+  description = "mimir password"
+}
+
 variable "namespace_secrets" {
   type        = list(string)
   description = "namespaces requiring to create a external secrets"

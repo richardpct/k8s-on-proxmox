@@ -17,5 +17,7 @@ module "kubernetes" {
   authentik_grafana_client_secret = var.authentik_grafana_client_secret
   loki_htpasswd                   = var.loki_htpasswd
   loki_password                   = var.loki_password
+  mimir_htpasswd                  = var.mimir_htpasswd
+  mimir_password                  = var.mimir_password
   namespace_secrets               = ["alloy", "authentik", "ceph-csi", "docker-registry", "gitlab", "loki", "mimir", "openbao", "prometheus"]
 }

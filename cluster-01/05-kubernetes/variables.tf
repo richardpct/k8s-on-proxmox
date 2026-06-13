@@ -87,3 +87,13 @@ variable "loki_password" {
   type        = string
   description = "loki password"
 }
+
+variable "mimir_htpasswd" {
+  type        = string
+  description = "mimir htpasswd"
+}
+
+variable "mimir_password" {
+  type        = string
+  description = "mimir password"
+}

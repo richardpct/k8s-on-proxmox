@@ -51,8 +51,7 @@ resource "vault_kv_secret_v2" "mimir" {
   name      = "secret"
   data_json = jsonencode(
     {
-      zip = "zap",
-      foo = "bar"
+      htpasswd = var.mimir_htpasswd
     }
   )
 }
@@ -106,6 +105,18 @@ resource "vault_kv_secret_v2" "prometheus_loki" {
     {
       password = var.loki_password,
       tenant   = "tenant1"
+    }
+  )
+}
+
+# prometheus mimir
+resource "vault_kv_secret_v2" "prometheus_mimir" {
+  mount     = vault_mount.grafana.path
+  name      = "mimir"
+  data_json = jsonencode(
+    {
+      username = "mimir"
+      password = var.mimir_password
     }
   )
 }
