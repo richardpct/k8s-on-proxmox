@@ -89,7 +89,7 @@ resource "vault_mount" "prometheus" {
 
 resource "vault_kv_secret_v2" "prometheus_grafana" {
   mount     = vault_mount.prometheus.path
-  name      = "secret"
+  name      = "grafana"
   data_json = jsonencode(
     {
       authentik_grafana_client_secret = var.authentik_grafana_client_secret
