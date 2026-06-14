@@ -44,7 +44,34 @@ resource "kubernetes_secret_v1" "default_tls_cert" {
   depends_on = [null_resource.wait_kubernetes_ready]
 }
 
-resource "null_resource" "install-gateway-crds" {
+resource "kubernetes_namespace_v1" "namespace_secrets" {
+  for_each = toset(var.namespace_secrets)
+
+  metadata {
+    name = each.key
+  }
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubernetes_secret_v1" "openbao_token" {
+  for_each = toset(var.namespace_secrets)
+
+  metadata {
+    name      = "openbao-token"
+    namespace = each.key
+  }
+
+  type = "Opaque"
+
+  data = {
+    "token" = var.openbao_token
+  }
+
+  depends_on = [kubernetes_namespace_v1.namespace_secrets]
+}
+
+resource "null_resource" "install_gateway_crds" {
   provisioner "local-exec" {
     command = <<EOF
       kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_gatewayclasses.yaml
@@ -76,7 +103,7 @@ resource "helm_release" "cilium" {
     }
   ]
 
-  depends_on = [null_resource.install-gateway-crds]
+  depends_on = [null_resource.install_gateway_crds]
 }
 
 resource "kubectl_manifest" "gateway" {
@@ -89,108 +116,55 @@ resource "kubectl_manifest" "gateway" {
   depends_on = [helm_release.cilium]
 }
 
-resource "helm_release" "vault" {
-  name             = "vault"
-  repository       = "https://helm.releases.hashicorp.com"
-  chart            = "vault"
-  namespace        = "vault"
+resource "helm_release" "kyverno" {
+  name             = "kyverno"
+  repository       = "https://kyverno.github.io/kyverno"
+  chart            = "kyverno"
+  namespace        = "kyverno"
   create_namespace = true
   force_update     = true
 
   values = [
-    "${file("${path.module}/helm-values/vault.yaml")}"
+    "${file("${path.module}/helm-values/kyverno.yaml")}"
+  ]
+
+  depends_on = [null_resource.wait_kubernetes_ready]
+}
+
+resource "kubectl_manifest" "kyverno_policies" {
+  yaml_body = templatefile("${path.module}/manifests/kyverno_policies.yaml.tftpl",
+    {
+      my_domain = var.my_domain
+    }
+  )
+
+  depends_on = [helm_release.kyverno]
+}
+
+resource "helm_release" "openbao" {
+  name             = "openbao"
+  repository       = "https://openbao.github.io/openbao-helm"
+  chart            = "openbao"
+  namespace        = "openbao"
+  create_namespace = true
+  force_update     = true
+
+  values = [
+    "${file("${path.module}/helm-values/openbao.yaml")}"
   ]
 
   depends_on = [helm_release.cilium]
 }
 
-resource "kubectl_manifest" "httproute_vault" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-vault.yaml.tftpl",
+resource "kubectl_manifest" "httproute_openbao" {
+  yaml_body = templatefile("${path.module}/manifests/httproute-openbao.yaml.tftpl",
     {
-      application = "vault"
+      application = "openbao"
       domain      = var.my_domain
     }
   )
 
-  depends_on = [helm_release.vault]
-}
-
-resource "null_resource" "wait_vault_up" {
-  provisioner "local-exec" {
-    command = <<EOF
-      while [ "$(curl -s --connect-timeout 2 https://vault.${var.my_domain}/v1/sys/health | jq .initialized)" != 'true' ]
-      do
-        sleep 1
-      done
-    EOF
-  }
-
-  depends_on = [kubectl_manifest.httproute_vault]
-}
-
-resource "kubernetes_namespace_v1" "ceph_csi" {
-  metadata {
-    name = "ceph-csi"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
-resource "kubernetes_secret_v1" "csi_cephfs_secret" {
-  metadata {
-    name      = "csi-cephfs-secret"
-    namespace = "ceph-csi"
-  }
-
-  type = "Opaque"
-
-  data = {
-    "userID"  = "admin"
-    "userKey" = var.cephfs_secret
-  }
-
-  depends_on = [kubernetes_namespace_v1.ceph_csi]
-}
-
-resource "kubernetes_namespace_v1" "monitoring" {
-  metadata {
-    name = "monitoring"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
-resource "kubernetes_secret_v1" "grafana_admin_password" {
-  metadata {
-    name      = "grafana-admin-password"
-    namespace = "monitoring"
-  }
-
-  type = "Opaque"
-
-  data = {
-    "admin-user"     = "admin"
-    "admin-password" = var.grafana_password
-  }
-
-  depends_on = [kubernetes_namespace_v1.monitoring]
-}
-
-resource "kubernetes_secret_v1" "grafana_loki_auth" {
-  metadata {
-    name      = "grafana-loki-auth"
-    namespace = "monitoring"
-  }
-
-  type = "Opaque"
-
-  # TEMPORARY
-  data = {
-    "password" = "password123"
-    "tenant"   = "tenant1"
-  }
-
-  depends_on = [kubernetes_namespace_v1.monitoring]
+  depends_on = [helm_release.openbao]
 }
 
 resource "kubernetes_cluster_role_v1" "ceph_csi_cephfs_provisioner_custom" {
@@ -222,7 +196,7 @@ resource "kubernetes_cluster_role_binding_v1" "ceph_csi_cephfs_provisioner_custo
     namespace = "ceph-csi"
   }
 
-  depends_on = [kubernetes_namespace_v1.ceph_csi, kubernetes_cluster_role_v1.ceph_csi_cephfs_provisioner_custom]
+  depends_on = [kubernetes_namespace_v1.namespace_secrets, kubernetes_cluster_role_v1.ceph_csi_cephfs_provisioner_custom]
 }
 
 resource "helm_release" "argo_cd" {
@@ -238,6 +212,49 @@ resource "helm_release" "argo_cd" {
   ]
 
   depends_on = [kubernetes_cluster_role_binding_v1.ceph_csi_cephfs_provisioner_custom]
+}
+
+resource "helm_release" "argocd_infra" {
+  name             = "argocd-infra"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argocd-apps"
+  namespace        = "argocd"
+  create_namespace = true
+  force_update     = true
+
+  values = [
+    templatefile("${path.module}/helm-values/argocd-infra.yaml.tftpl",
+      {
+        ceph_cluster_id = var.ceph_cluster_id
+      }
+    )
+  ]
+
+  depends_on = [helm_release.argo_cd]
+}
+
+resource "null_resource" "wait_docker_registry_ready" {
+  provisioner "local-exec" {
+    command = <<EOF
+      while ! curl https://registry.${var.my_domain}/v2/ | grep {}; do
+        sleep 10
+      done
+    EOF
+  }
+
+  depends_on = [helm_release.argocd_infra]
+}
+
+resource "null_resource" "wait_cephfs_csi_ready" {
+  provisioner "local-exec" {
+    command = <<EOF
+      while ! kubectl get csidrivers.storage.k8s.io | grep cephfs.csi.ceph.com; do
+        sleep 10
+      done
+    EOF
+  }
+
+  depends_on = [helm_release.argocd_infra]
 }
 
 resource "helm_release" "argocd_apps" {
@@ -256,71 +273,5 @@ resource "helm_release" "argocd_apps" {
     )
   ]
 
-  depends_on = [helm_release.argo_cd]
-}
-
-resource "kubernetes_namespace_v1" "gitlab" {
-  metadata {
-    name = "gitlab"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
-resource "kubernetes_secret_v1" "gitlab_root_password" {
-  metadata {
-    name      = "gitlab-root-password"
-    namespace = "gitlab"
-  }
-
-  type = "Opaque"
-
-  data = {
-    "password" = var.gitlab_password
-  }
-
-  depends_on = [kubernetes_namespace_v1.gitlab]
-}
-
-resource "null_resource" "wait_svc_gitlab_webservice_default_ready" {
-  provisioner "local-exec" {
-    command = <<EOF
-      while ! kubectl -n gitlab get svc gitlab-webservice-default > /dev/null 2>&1; do
-        echo 'waiting for gitlab-webservice-default service...'
-        sleep 10
-      done
-    EOF
-  }
-
-  depends_on = [helm_release.argocd_apps]
-}
-
-resource "kubectl_manifest" "httproute_gitlab" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-gitlab.yaml.tftpl",
-    {
-      application = "gitlab"
-      domain      = var.my_domain
-    }
-  )
-
-  depends_on = [null_resource.wait_svc_gitlab_webservice_default_ready]
-}
-
-resource "kubernetes_namespace_v1" "loki" {
-  metadata {
-    name = "loki"
-  }
-
-  depends_on = [null_resource.wait_kubernetes_ready]
-}
-
-resource "kubectl_manifest" "httproute_loki" {
-  yaml_body = templatefile("${path.module}/manifests/httproute-loki.yaml.tftpl",
-    {
-      application = "loki"
-      domain      = var.my_domain
-    }
-  )
-
-  depends_on = [kubernetes_namespace_v1.loki]
+  depends_on = [null_resource.wait_docker_registry_ready, null_resource.wait_cephfs_csi_ready]
 }

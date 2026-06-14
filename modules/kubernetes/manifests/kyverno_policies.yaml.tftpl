@@ -1,0 +1,34 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: redirect-to-proxy-cache
+  annotations:
+    policies.kyverno.io/title: Redirect Docker Hub to Local Proxy Cache
+spec:
+  background: false
+  rules:
+    - name: mutate-all-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - docker-registry
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - (name): "{{ element.name }}"
+                    image: "{{ regex_replace_all('^docker.io/([^/]+)$', element.image, 'registry.${my_domain}/library/$1') | regex_replace_all('^docker.io/', @, 'registry.${my_domain}/') | regex_replace_all('^([^/]+)$', @, 'registry.${my_domain}/library/$1') | regex_replace_all('^([^/.]+/[^/]+)$', @, 'registry.${my_domain}/$1') }}"
+          - list: "request.object.spec.initContainers || `[]`"
+            patchStrategicMerge:
+              spec:
+                initContainers:
+                  - (name): "{{ element.name }}"
+                    image: "{{ regex_replace_all('^docker.io/([^/]+)$', element.image, 'registry.${my_domain}/library/$1') | regex_replace_all('^docker.io/', @, 'registry.${my_domain}/') | regex_replace_all('^([^/]+)$', @, 'registry.${my_domain}/library/$1') | regex_replace_all('^([^/.]+/[^/]+)$', @, 'registry.${my_domain}/$1') }}"

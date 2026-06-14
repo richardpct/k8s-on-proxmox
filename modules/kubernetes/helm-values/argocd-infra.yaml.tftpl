@@ -1,0 +1,126 @@
+applications:
+  external-secrets:
+    namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "-10"
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://charts.external-secrets.io
+        chart: external-secrets
+        targetRevision: 2.5.0
+        helm:
+          valueFiles:
+            - $myrepo/external-secrets/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        ref: myrepo
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: external-secrets
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
+  docker-registry:
+    namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "10"
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        path: docker-registry/extra-manifests
+      - repoURL: https://twuni.github.io/docker-registry.helm
+        chart: docker-registry
+        targetRevision: 3.0.0
+        helm:
+          valueFiles:
+            - $myrepo/docker-registry/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        ref: myrepo
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: docker-registry
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null
+  ceph-csi:
+    namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "10"
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        path: ceph-csi/extra-manifests
+      - repoURL: https://ceph.github.io/csi-charts
+        chart: ceph-csi-cephfs
+        targetRevision: 3.16.2
+        helm:
+          valueFiles:
+            - $myrepo/ceph-csi/values.yaml
+          parameters:
+            - name: csiConfig[0].clusterID
+              value: ${ceph_cluster_id}
+            - name: storageClass.clusterID
+              value: ${ceph_cluster_id}
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        ref: myrepo
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: ceph-csi
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+    revisionHistoryLimit: null
+  authentik:
+    namespace: argocd
+    annotations:
+      argocd.argoproj.io/sync-wave: "10"
+    finalizers:
+    - resources-finalizer.argocd.argoproj.io
+    project: default
+    sources:
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        path: authentik/extra-manifests
+      - repoURL: https://charts.goauthentik.io
+        chart: authentik
+        targetRevision: 2026.5.2
+        helm:
+          valueFiles:
+            - $myrepo/authentik/values.yaml
+      - repoURL: https://github.com/richardpct/argocd-apps.git
+        targetRevision: HEAD
+        ref: myrepo
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: authentik
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+      syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    revisionHistoryLimit: null

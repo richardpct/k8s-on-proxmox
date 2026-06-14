@@ -33,9 +33,9 @@ variable "my_domain" {
   description = "my domain name"
 }
 
-variable "vault_token" {
+variable "openbao_token" {
   type        = string
-  description = "vault token"
+  description = "openbao token"
 }
 
 variable "ceph_cluster_id" {
@@ -43,12 +43,62 @@ variable "ceph_cluster_id" {
   description = "ceph cluster id"
 }
 
+variable "my_password" {
+  type        = string
+  description = "my password"
+}
+
 variable "gitlab_password" {
   type        = string
   description = "gitlab password"
 }
 
-variable "grafana_password" {
+variable "docker_registry_access_key" {
   type        = string
-  description = "grafana password"
+  description = "docker registry access key"
+}
+
+variable "docker_registry_secret_key" {
+  type        = string
+  description = "docker registry secret key"
+}
+
+variable "authentik_secret_key" {
+  type        = string
+  description = "authentik secret key"
+}
+
+variable "authentik_postgres_pass" {
+  type        = string
+  description = "authentik postgres pass"
+}
+
+variable "authentik_grafana_client_secret" {
+  type        = string
+  description = "authentik grafana client secret"
+}
+
+variable "loki_htpasswd" {
+  type        = string
+  description = "loki htpasswd"
+}
+
+variable "loki_password" {
+  type        = string
+  description = "loki password"
+}
+
+variable "mimir_htpasswd" {
+  type        = string
+  description = "mimir htpasswd"
+}
+
+variable "mimir_password" {
+  type        = string
+  description = "mimir password"
+}
+
+variable "namespace_secrets" {
+  type        = list(string)
+  description = "namespaces requiring to create a external secrets"
 }
