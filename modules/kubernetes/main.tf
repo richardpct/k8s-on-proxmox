@@ -71,7 +71,7 @@ resource "kubernetes_secret_v1" "openbao_token" {
   depends_on = [kubernetes_namespace_v1.namespace_secrets]
 }
 
-resource "null_resource" "install-gateway-crds" {
+resource "null_resource" "install_gateway_crds" {
   provisioner "local-exec" {
     command = <<EOF
       kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_gatewayclasses.yaml
@@ -103,7 +103,7 @@ resource "helm_release" "cilium" {
     }
   ]
 
-  depends_on = [null_resource.install-gateway-crds]
+  depends_on = [null_resource.install_gateway_crds]
 }
 
 resource "kubectl_manifest" "gateway" {
