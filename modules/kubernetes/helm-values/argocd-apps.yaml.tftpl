@@ -14,7 +14,7 @@ applications:
           valueFiles:
           - $myrepo/kube-prometheus-stack/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -34,7 +34,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: alloy/extra-manifests
       - repoURL: https://grafana.github.io/helm-charts
         chart: alloy
@@ -43,7 +43,7 @@ applications:
           valueFiles:
           - $myrepo/alloy/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -63,7 +63,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: loki/extra-manifests
       - repoURL: oci://ghcr.io/grafana-community/helm-charts/loki
         chart: loki
@@ -72,7 +72,7 @@ applications:
           valueFiles:
           - $myrepo/loki/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -92,7 +92,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: mimir/extra-manifests
       - repoURL: https://grafana.github.io/helm-charts
         chart: mimir-distributed
@@ -101,7 +101,7 @@ applications:
           valueFiles:
             - $myrepo/mimir/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -127,7 +127,7 @@ applications:
           valueFiles:
           - $myrepo/metrics-server/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -149,7 +149,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: gitlab/extra-manifests
       - repoURL: https://charts.gitlab.io
         chart: gitlab
@@ -158,7 +158,7 @@ applications:
           valueFiles:
           - $myrepo/gitlab/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc

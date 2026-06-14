@@ -14,7 +14,7 @@ applications:
           valueFiles:
             - $myrepo/external-secrets/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -36,7 +36,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: docker-registry/extra-manifests
       - repoURL: https://twuni.github.io/docker-registry.helm
         chart: docker-registry
@@ -45,7 +45,7 @@ applications:
           valueFiles:
             - $myrepo/docker-registry/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -67,7 +67,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: ceph-csi/extra-manifests
       - repoURL: https://ceph.github.io/csi-charts
         chart: ceph-csi-cephfs
@@ -81,7 +81,7 @@ applications:
             - name: storageClass.clusterID
               value: ${ceph_cluster_id}
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
@@ -102,7 +102,7 @@ applications:
     project: default
     sources:
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         path: authentik/extra-manifests
       - repoURL: https://charts.goauthentik.io
         chart: authentik
@@ -111,7 +111,7 @@ applications:
           valueFiles:
             - $myrepo/authentik/values.yaml
       - repoURL: https://github.com/richardpct/argocd-apps.git
-        targetRevision: install-mimir
+        targetRevision: HEAD
         ref: myrepo
     destination:
       server: https://kubernetes.default.svc
