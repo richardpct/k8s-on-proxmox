@@ -74,11 +74,12 @@ resource "kubernetes_secret_v1" "openbao_token" {
 resource "null_resource" "install_gateway_crds" {
   provisioner "local-exec" {
     command = <<EOF
-      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_gatewayclasses.yaml
-      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_gateways.yaml
-      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
-      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_referencegrants.yaml
-      kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.2.0/config/crd/standard/gateway.networking.k8s.io_grpcroutes.yaml
+      base=https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/${local.gateway_api_version}/config/crd/standard
+      kubectl apply -f $base/gateway.networking.k8s.io_gatewayclasses.yaml
+      kubectl apply -f $base/gateway.networking.k8s.io_gateways.yaml
+      kubectl apply -f $base/gateway.networking.k8s.io_httproutes.yaml
+      kubectl apply -f $base/gateway.networking.k8s.io_referencegrants.yaml
+      kubectl apply -f $base/gateway.networking.k8s.io_grpcroutes.yaml
     EOF
   }
 
