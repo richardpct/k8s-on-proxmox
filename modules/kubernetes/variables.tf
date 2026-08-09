@@ -1,6 +1,6 @@
 locals {
   kube_config         = "~/.kube/config"
-  gateway_api_version = "v1.5.1"
+  gateway_api_version = "v1.6.1"
 }
 
 variable "region" {

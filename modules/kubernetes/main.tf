@@ -21,7 +21,7 @@ data "terraform_remote_state" "dns" {
 resource "null_resource" "wait_kubernetes_ready" {
   provisioner "local-exec" {
     command = <<EOF
-      while ! kubectl cluster-info; do
+      while ! KUBECONFIG=${local.kube_config} kubectl cluster-info; do
         sleep 2
       done
     EOF
@@ -74,12 +74,8 @@ resource "kubernetes_secret_v1" "openbao_token" {
 resource "null_resource" "install_gateway_crds" {
   provisioner "local-exec" {
     command = <<EOF
-      base=https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/${local.gateway_api_version}/config/crd/standard
-      kubectl apply -f $base/gateway.networking.k8s.io_gatewayclasses.yaml
-      kubectl apply -f $base/gateway.networking.k8s.io_gateways.yaml
-      kubectl apply -f $base/gateway.networking.k8s.io_httproutes.yaml
-      kubectl apply -f $base/gateway.networking.k8s.io_referencegrants.yaml
-      kubectl apply -f $base/gateway.networking.k8s.io_grpcroutes.yaml
+      KUBECONFIG=${local.kube_config} kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/${local.gateway_api_version}/standard-install.yaml
+
     EOF
   }
 

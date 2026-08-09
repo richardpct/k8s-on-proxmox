@@ -63,10 +63,10 @@ write_files:
       systemctl restart containerd
 
       # KUBERNETES TOOLS
-      KUBE_VERS=$(curl -s https://github.com/kubernetes/kubernetes | grep '/releases/tag/v' | sed -e 's/.*\(.[0-9]*\.[0-9]*\)\..*/\1/')
+      KUBE_VERS=$(curl -sL https://dl.k8s.io/release/stable.txt)
 
-      curl -fsSL https://pkgs.k8s.io/core:/stable:/v$KUBE_VERS/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v$KUBE_VERS/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
+      curl -fsSL https://pkgs.k8s.io/core:/stable:/$${KUBE_VERS%.*}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$${KUBE_VERS%.*}/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
 
       apt-get update
       apt-get install -y kubelet kubeadm kubectl
